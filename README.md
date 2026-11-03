@@ -80,3 +80,9 @@ Este paquete es una base local: no hay despliegue ni conexiones reales verificad
 - El ROAS total es ventas Shopify / gasto de campañas no identificadas como Amazon (MER), no ROAS atribuible a pauta. No puede calcularse de forma fiable con fuentes ausentes o divisas distintas. La identificación por nombre puede omitir campañas Amazon o clasificar mal otras.
 - Sin cron o almacenamiento persistente: la caché de 15 minutos es por instancia y los datos se consultan al abrir o actualizar. Validar límites de API, paginación, rendimiento y tiempo de ejecución con datos reales; el incremento de histórico puede afectar duración y cuota.
 - Verificar clics de enlace Meta y el plan aprobado. Amazon no se incluye; unidades por pedido y avance vs. plan siguen pendientes. Audiencia: equipo y cliente.
+
+## Google Analytics 4
+
+El conector usa la Google Analytics Data API y una cuenta de servicio dedicada con acceso Lector a la propiedad GA4. Configura en Vercel Production `GA4_PROPERTY_ID` (ID numérico de propiedad, no ID G-), `GA4_CLIENT_EMAIL` y `GA4_PRIVATE_KEY` (clave privada PEM de esa cuenta). No subas la clave al repositorio. Después de modificar variables, despliega de nuevo. La cuenta necesita acceso a la propiedad correcta; habilitar la API no otorga acceso por sí mismo.
+
+Consulta usuarios activos y sesiones para el rango completo (usuarios no se suman por día) y sesiones por grupo de canales predeterminado. La comparación usa otro reporte del periodo anterior cuando este queda dentro del histórico desde 2026-01-01. La zona horaria depende de la propiedad GA4. Las ventas y el ROAS siguen usando Shopify y Ads, no GA4. Valida frente a GA4 con los mismos rangos, zona horaria, definición de canal y posibles retrasos, umbrales o muestreo. El caché es de 15 minutos por instancia y rango; Actualizar datos lo omite.

@@ -4,6 +4,7 @@
 // credentials. No dependencies.
 
 import assert from "node:assert/strict";
+import { generateKeyPairSync } from "node:crypto";
 import { chunkRange, parseRange } from "../lib/common.js";
 
 let calls = [];
@@ -252,6 +253,34 @@ await test("Variables faltantes se reportan por nombre", async () => {
   assert.equal(r.statusCode, 500);
   assert.match(r.body.detail, /TIKTOK_ADVERTISER_ID/);
   process.env.TIKTOK_ADVERTISER_ID = saved;
+});
+
+// ---------- GA4 ----------
+const {privateKey} = generateKeyPairSync('rsa',{modulusLength:2048,privateKeyEncoding:{type:'pkcs8',format:'pem'},publicKeyEncoding:{type:'spki',format:'pem'}});
+Object.assign(process.env,{GA4_PROPERTY_ID:'12345',GA4_CLIENT_EMAIL:'service@example.test',GA4_PRIVATE_KEY:privateKey});
+const ga4 = (await import('../api/ga4-data.js')).default;
+await test('GA4: usuarios únicos por periodo y sesiones por canal; sin sumar usuarios diarios', async()=>{
+  responder = (url,init)=>{
+    if(url.includes('oauth2.googleapis.com')) return {body:{access_token:'fake',expires_in:3600}};
+    const body = JSON.parse(init.body);
+    assert.deepEqual(body.dateRanges,[{startDate:'2026-06-01',endDate:'2026-06-30'}]);
+    assert.ok(url.includes('/properties/12345:runReport'));
+    if(body.dimensions.length) return {body:{rows:[{dimensionValues:[{value:'Paid Social'}],metricValues:[{value:'56'}]}],metadata:{subjectToThresholding:true}}};
+    return {body:{rows:[{metricValues:[{value:'42'},{value:'90'}]}],metadata:{timeZone:'America/Mexico_City'}}};
+  };
+  const r = await call(ga4,{since:'2026-06-01',until:'2026-06-30'});
+  assert.equal(r.statusCode,200); assert.equal(r.body.activeUsers,42); assert.equal(r.body.sessions,90);
+  assert.deepEqual(r.body.channels,[{channel:'Paid Social',sessions:56}]); assert.equal(r.body.meta.thresholded,true);
+});
+await test('GA4: error de autorización no inventa ceros', async()=>{
+  responder=()=>({status:403,body:{error:{message:'Missing permissions'}}});
+  const r=await call(ga4,{since:'2026-07-01',until:'2026-07-02'});
+  assert.equal(r.statusCode,502); assert.match(r.body.detail,/Missing permissions/);
+});
+await test('GA4: protege el endpoint con la clave del dashboard', async()=>{
+  process.env.DASHBOARD_KEY='secreto';
+  const r=await call(ga4,{since:'2026-06-01',until:'2026-06-30'});
+  assert.equal(r.statusCode,401); delete process.env.DASHBOARD_KEY;
 });
 
 console.log(`\n${passed} pruebas pasaron`);

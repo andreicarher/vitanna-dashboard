@@ -187,7 +187,7 @@
     </div>
     <div class="card">
       <h2>Por plataforma</h2>
-      <p class="sub">Conversiones y valor según cada plataforma. Pueden solaparse; no se suman como pedidos únicos.</p>
+      <p class="sub">Conversiones y valor según cada plataforma. Google: solo Google Shopping App Purchase (todas las conversiones, por fecha de interacción). Pueden solaparse; no se suman como pedidos únicos.</p>
       <div class="table-scroll"><table id="table-resumen"></table></div>
     </div>
   </section>
@@ -494,7 +494,7 @@ function renderPlatform(key, range){
   const t = sumRows(rows), tp = sumRows(platformRows(key, previousRange(range)));
   if(!el.dataset.ready){
     el.innerHTML = `<div class="kpis" id="kpis-${key}"></div>
-      <div class="card"><h2>Inversión y ROAS reportado</h2><p class="sub" id="sub-${key}"></p><div class="chart-box"><canvas id="chart-${key}"></canvas></div></div>
+      <div class="card"><h2>Inversión y ROAS reportado</h2>${key === 'google' ? '<p class="sub">Google: solo Google Shopping App Purchase; todas las conversiones atribuidas a la acción, por fecha de interacción. Pendiente conciliar con Google Ads.</p>' : ''}<p class="sub" id="sub-${key}"></p><div class="chart-box"><canvas id="chart-${key}"></canvas></div></div>
       <div class="card"><h2>Campañas</h2><p class="sub">Ordenadas por inversión. Se excluyen las campañas identificadas por nombre como Amazon; verifica el destino.</p><div class="table-scroll"><table id="table-${key}"></table></div></div>`;
     el.dataset.ready = '1';
   }
@@ -504,8 +504,8 @@ function renderPlatform(key, range){
     kpiHtml('Clics', fmtInt(t.clicks), deltaHtml(t.clicks, tp.clicks, 1, range)),
     kpiHtml('CTR', fmtPct(t.ctr), deltaHtml(t.ctr, tp.ctr, 1, range)),
     kpiHtml('CPC', isFinite(t.cpc)?fmtMoney2(t.cpc):'—', deltaHtml(t.cpc, tp.cpc, -1, range)),
-    kpiHtml('Conversiones', fmtInt(t.conversions), deltaHtml(t.conversions, tp.conversions, 1, range)),
-    kpiHtml('Costo por conversión', isFinite(t.cpa)?fmtMoney2(t.cpa):'—', deltaHtml(t.cpa, tp.cpa, -1, range)),
+    kpiHtml(key === 'google' ? 'Compras' : 'Conversiones', fmtInt(t.conversions), deltaHtml(t.conversions, tp.conversions, 1, range)),
+    kpiHtml(key === 'google' ? 'Costo por compra' : 'Costo por conversión', isFinite(t.cpa)?fmtMoney2(t.cpa):'—', deltaHtml(t.cpa, tp.cpa, -1, range)),
     kpiHtml('ROAS reportado', fmtX(t.roas), deltaHtml(t.roas, tp.roas, 1, range)),
   ].join('');
 
@@ -521,7 +521,7 @@ function renderPlatform(key, range){
   const byCamp = new Map();
   rows.forEach(r => { const id = r.campaignId || r.campaign; if(!byCamp.has(id)) byCamp.set(id, { name:r.campaign, rows:[] }); byCamp.get(id).rows.push(r); });
   const camps = [...byCamp.values()].map(c => ({ name:c.name, t:sumRows(c.rows) })).filter(c => c.t.spend > 0 || c.t.impressions > 0).sort((a,b)=>b.t.spend-a.t.spend);
-  document.getElementById(`table-${key}`).innerHTML = tableHead(['Campaña','Inversión','% inversión','Impresiones','Clics','CTR','CPC','Conversiones','Valor reportado','ROAS reportado']) +
+  document.getElementById(`table-${key}`).innerHTML = tableHead(['Campaña','Inversión','% inversión','Impresiones','Clics','CTR','CPC',key === 'google' ? 'Compras' : 'Conversiones','Valor reportado','ROAS reportado']) +
     `<tbody>${camps.map(c => platformRowHtml(esc(c.name) + (CONFIG.AMAZON_PATTERN.test(c.name||'') ? '<span class="tag">Amazon</span>' : ''), c.t, t.spend)).join('') || `<tr><td colspan="10" class="muted">Sin actividad en este periodo.</td></tr>`}
      <tr class="total">${platformCells('Total', t, t.spend)}</tr></tbody>`;
 }

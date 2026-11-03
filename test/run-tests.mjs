@@ -96,24 +96,45 @@ Object.assign(process.env, {
 });
 const google = (await import("../api/google-ads-data.js")).default;
 
-await test("Google: quita guiones, pagina sin pageSize, convierte micros", async () => {
+await test("Google: filtra una acción de compra, conserva inversión sin duplicar y pagina", async () => {
   responder = (url, init) => {
     if (url.includes("oauth2")) return { body: { access_token: "at", expires_in: 3600 } };
-    const body = JSON.parse(init.body);
-    assert.ok(!("pageSize" in body), "no debe mandar pageSize");
-    if (body.query.includes("FROM customer")) return { body: { results: [{ customer: { currencyCode: "MXN" } }] } };
-    if (!body.pageToken) return { body: { results: [{ segments: { date: "2026-01-01" }, campaign: { id: "9", name: "Pmax", advertisingChannelType: "PERFORMANCE_MAX" }, metrics: { costMicros: "12500000", impressions: "300", clicks: "12", conversions: "1.5", conversionsValue: "900" } }], nextPageToken: "N" } };
-    return { body: { results: [{ segments: { date: "2026-01-02" }, campaign: { id: "9", name: "Pmax" }, metrics: { costMicros: "1000000" } }] } };
+    const body = JSON.parse(init.body), q = body.query;
+    assert.ok(!("pageSize" in body));
+    if (q.includes("FROM customer")) return { body: { results: [{ customer: { currencyCode: "MXN" } }] } };
+    if (q.includes("FROM conversion_action")) return { body: { results: [{ conversionAction: { resourceName: "customers/1234567890/conversionActions/12", name: "Google Shopping App Purchase", status: "ENABLED" } }] } };
+    if (q.includes("segments.conversion_action")) {
+      assert.match(q, /conversionActions\/12/);
+      assert.ok(!q.includes("cost_micros"));
+      return { body: { results: [{ segments: { date:"2026-01-01", conversionAction:"customers/1234567890/conversionActions/12" }, campaign: { id:"9",name:"Pmax" }, metrics: { allConversions:"1.5", allConversionsValue:"900" } }] } };
+    }
+    assert.ok(!q.includes("metrics.conversions"));
+    if (!body.pageToken) return { body: { results: [{ segments: { date: "2026-01-01" }, campaign: { id:"9",name:"Pmax",advertisingChannelType:"PERFORMANCE_MAX" }, metrics: { costMicros:"12500000", impressions:"300", clicks:"12" } }], nextPageToken: "N" } };
+    return { body: { results: [{ segments: { date:"2026-01-02" }, campaign: { id:"9",name:"Pmax" }, metrics: { costMicros:"1000000" } }] } };
   };
-  const r = await call(google, { since: "2026-01-01", until: "2026-01-02" });
-  assert.equal(r.statusCode, 200, JSON.stringify(r.body));
-  assert.equal(r.body.rows.length, 2);
-  assert.equal(r.body.rows[0].spend, 12.5);
-  assert.equal(r.body.rows[0].revenue, 900);
-  const search = calls.find((c) => c.url.includes("googleAds:search"));
+  const r = await call(google, { since:"2026-01-01",until:"2026-01-02" });
+  assert.equal(r.statusCode,200,JSON.stringify(r.body));
+  assert.equal(r.body.rows.length,2);
+  assert.equal(r.body.rows[0].spend,12.5);
+  assert.equal(r.body.rows[0].conversions,1.5);
+  assert.equal(r.body.rows[0].revenue,900);
+  assert.equal(r.body.rows[1].conversions,0);
+  assert.equal(r.body.meta.purchaseAction,"Google Shopping App Purchase");
+  const search = calls.find(c=>c.url.includes("googleAds:search"));
   assert.ok(search.url.includes("/customers/1234567890/"));
-  assert.equal(search.init.headers["login-customer-id"], "1112223333");
-  assert.ok(search.init.body.includes("BETWEEN '2026-01-01' AND '2026-01-02'"));
+  assert.equal(search.init.headers["login-customer-id"],"1112223333");
+});
+await test("Google: no inventa ceros si falta o hay duplicada la acción elegida", async () => {
+  for (const found of [[], [{conversionAction:{resourceName:"customers/1/conversionActions/1",name:"Google Shopping App Purchase"}}, {conversionAction:{resourceName:"customers/1/conversionActions/2",name:"Google Shopping App Purchase"}}]]) {
+    responder = (url, init) => {
+      if (url.includes("oauth2")) return {body:{access_token:"at",expires_in:3600}};
+      const q=JSON.parse(init.body).query;
+      return {body:{results:q.includes("FROM conversion_action")?found:[]}};
+    };
+    const r=await call(google,{since:"2026-07-01",until:"2026-07-02"});
+    assert.equal(r.statusCode,502);
+    assert.match(r.body.detail,/una única acción/);
+  }
 });
 await test("Google: muestra el error anidado, no solo el genérico", async () => {
   responder = (url) => url.includes("oauth2")

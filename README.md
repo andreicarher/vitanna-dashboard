@@ -33,11 +33,12 @@ Cada función devuelve el mismo formato (`date, campaign, spend, impressions, cl
 - `META_PURCHASE_ACTION`: qué cuenta como compra. Confirmado: solo el evento de compra del píxel (`offsite_conversion.fb_pixel_purchase`).
 
 ### Google Ads
-- Developer Token desde el MCC → Centro de API (requiere aprobación de Google).
+- Desde septiembre de 2026, el acceso se aprueba por proyecto de Google Cloud (nivel Explorer o superior). El código actual aún requiere GOOGLE_ADS_DEVELOPER_TOKEN aunque Google ya no lo usa; mantener la variable hasta actualizarlo.
 - OAuth Client ID tipo **Aplicación web** (no "Escritorio"), con `https://developers.google.com/oauthplayground` como URI de redirección autorizada. Con un cliente de escritorio el Playground falla con `redirect_uri_mismatch`.
 - Refresh token: OAuth Playground → engrane → "Use your own OAuth credentials" → scope `https://www.googleapis.com/auth/adwords` → autorizar → intercambiar código.
 - Customer ID y Login Customer ID sin guiones (el código los quita por si acaso).
 - `GOOGLE_ADS_API_VERSION`: revisa la versión vigente en la documentación de Google Ads antes del primer deploy.
+- Compras y valor: solo la acción «Google Shopping App Purchase», con métricas all_conversions y all_conversions_value de Google (fecha de interacción). Consulta independiente de la inversión para evitar duplicarla. Si no se encuentra una única acción con ese nombre, la fuente falla en lugar de mostrar ceros. Comparar con Google Ads por acción, periodo, ventana de atribución y campañas; no son pedidos totales Shopify.
 
 ### TikTok Ads
 - En TikTok for Business Developers crea una app con permiso de **Reporting** y autorízala sobre el advertiser para obtener el access token.

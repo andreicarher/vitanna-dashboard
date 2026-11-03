@@ -71,47 +71,69 @@ async function gaqlSearch(query) {
   return rows;
 }
 
+// La acción se resuelve por nombre de forma inequívoca; no se suman variantes.
+const PURCHASE_ACTION = "Google Shopping App Purchase";
+
 async function fetchGoogle({ since, until }) {
   requireEnv([
-    "GOOGLE_ADS_DEVELOPER_TOKEN",
-    "GOOGLE_ADS_CLIENT_ID",
-    "GOOGLE_ADS_CLIENT_SECRET",
-    "GOOGLE_ADS_REFRESH_TOKEN",
-    "GOOGLE_ADS_CUSTOMER_ID",
+    "GOOGLE_ADS_DEVELOPER_TOKEN", "GOOGLE_ADS_CLIENT_ID", "GOOGLE_ADS_CLIENT_SECRET",
+    "GOOGLE_ADS_REFRESH_TOKEN", "GOOGLE_ADS_CUSTOMER_ID",
   ]);
-  const [raw, account] = await Promise.all([
+  // Primer reporte sin segmentar: la inversión y los clics se leen una sola vez.
+  const [raw, account, actions] = await Promise.all([
     gaqlSearch(`
-      SELECT
-        segments.date,
-        campaign.id,
-        campaign.name,
-        campaign.advertising_channel_type,
-        metrics.cost_micros,
-        metrics.impressions,
-        metrics.clicks,
-        metrics.conversions,
-        metrics.conversions_value
-      FROM campaign
-      WHERE segments.date BETWEEN '${since}' AND '${until}'
+      SELECT segments.date, campaign.id, campaign.name, campaign.advertising_channel_type,
+        metrics.cost_micros, metrics.impressions, metrics.clicks
+      FROM campaign WHERE segments.date BETWEEN '${since}' AND '${until}'
       ORDER BY segments.date ASC
     `),
     gaqlSearch(`SELECT customer.currency_code FROM customer LIMIT 1`),
+    gaqlSearch(`SELECT conversion_action.resource_name, conversion_action.name, conversion_action.status
+      FROM conversion_action WHERE conversion_action.name = 'Google Shopping App Purchase'
+      AND conversion_action.status != 'REMOVED'`),
   ]);
-  const rows = raw.map((r) => ({
-    date: r.segments.date,
-    campaignId: r.campaign.id,
-    campaign: r.campaign.name,
-    channelType: r.campaign.advertisingChannelType,
-    spend: num(r.metrics.costMicros) / 1_000_000,
-    impressions: num(r.metrics.impressions),
-    clicks: num(r.metrics.clicks),
-    conversions: num(r.metrics.conversions),
-    revenue: num(r.metrics.conversionsValue),
-  }));
+  const candidates = actions.map(r => r.conversionAction).filter(a => a?.name === PURCHASE_ACTION && a.resourceName);
+  if (candidates.length !== 1) {
+    throw httpError(502, `Google Ads: se esperaba una única acción activa o pausada llamada ${PURCHASE_ACTION}; se encontraron ${candidates.length}. Revisar la configuración.`);
+  }
+  const actionId = candidates[0].resourceName;
+  if (!/^customers\/\d+\/conversionActions\/\d+$/.test(actionId)) {
+    throw httpError(502, "Google Ads: identificador de acción de compra inválido.");
+  }
+  // Segundo reporte: SOLO la acción elegida; no trae inversión para evitar duplicarla.
+  // all_conversions conserva esa acción aunque sea secundaria en algún objetivo.
+  const purchases = await gaqlSearch(`
+    SELECT segments.date, segments.conversion_action, campaign.id, campaign.name,
+      campaign.advertising_channel_type, metrics.all_conversions, metrics.all_conversions_value
+    FROM campaign WHERE segments.date BETWEEN '${since}' AND '${until}'
+      AND segments.conversion_action = '${actionId}' ORDER BY segments.date ASC
+  `);
+  const keyed = new Map();
+  const keyOf = r => `${r.campaign.id}|${r.segments.date}`;
+  for (const r of raw) {
+    keyed.set(keyOf(r), {
+      date: r.segments.date, campaignId: r.campaign.id, campaign: r.campaign.name,
+      channelType: r.campaign.advertisingChannelType,
+      spend: num(r.metrics.costMicros) / 1_000_000,
+      impressions: num(r.metrics.impressions), clicks: num(r.metrics.clicks), conversions: 0, revenue: 0,
+    });
+  }
+  for (const r of purchases) {
+    if (r.segments.conversionAction !== actionId) throw httpError(502, "Google Ads: la respuesta contiene otra acción de conversión.");
+    const key = keyOf(r);
+    if (!keyed.has(key)) keyed.set(key, {
+      date: r.segments.date, campaignId: r.campaign.id, campaign: r.campaign.name,
+      channelType: r.campaign.advertisingChannelType, spend: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0,
+    });
+    const row = keyed.get(key);
+    row.conversions += num(r.metrics.allConversions);
+    row.revenue += num(r.metrics.allConversionsValue);
+  }
   return {
     currency: account[0]?.customer?.currencyCode || null,
-    rows,
-    meta: { apiVersion: API_VERSION() },
+    rows: [...keyed.values()],
+    meta: { apiVersion: API_VERSION(), purchaseAction: PURCHASE_ACTION,
+      purchaseMetric: "all_conversions", attributionDate: "interaction" },
   };
 }
 

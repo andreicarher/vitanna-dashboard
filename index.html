@@ -106,6 +106,8 @@
   .card .sub{ font-size:.82rem; color:var(--muted); margin-bottom:1.25rem; }
   .chart-box{ position:relative; height:360px; }
   .table-scroll{ overflow-x:auto; }
+  #panel-ga4 th:first-child, #panel-ga4 td:first-child { min-width: 100px; }
+  #panel-ga4 th, #panel-ga4 td { white-space: normal; }
   table{ width:100%; border-collapse:collapse; min-width:820px; font-variant-numeric:tabular-nums; }
   th{ text-align:right; font-weight:500; font-size:.78rem; color:var(--muted); padding:.6rem .75rem; border-bottom:1px solid var(--line); white-space:nowrap; }
   td{ text-align:right; padding:.65rem .75rem; border-bottom:1px solid rgba(255,255,255,.06); font-size:.86rem; white-space:nowrap; }
@@ -163,6 +165,7 @@
     <button class="tab" role="tab" data-tab="google" aria-selected="false">Google</button>
     <button class="tab" role="tab" data-tab="tiktok" aria-selected="false">TikTok</button>
     <button class="tab" role="tab" data-tab="shopify" aria-selected="false">Shopify</button>
+    <button class="tab" role="tab" data-tab="ga4" aria-selected="false">Analytics 4</button>
   </div>
 </nav>
 
@@ -204,6 +207,7 @@
       <div class="chart-box"><canvas id="chart-shopify"></canvas></div>
     </div>
   </section>
+  <section class="panel" id="panel-ga4" aria-live="polite"><div class="state">Selecciona Analytics 4 para cargar los datos.</div></section>
 </main>
 
 <script>
@@ -280,6 +284,8 @@ let DATA = { meta:null, google:null, tiktok:null, shopify:null };
 let ERRORS = {};
 let filters = { preset:'30', customStart:null, customEnd:null, compare:true, excludeAmazon:true };
 let charts = {};
+let ga4Request = 0;
+let ga4Force = false;
 
 /* =========================================================================
    CARGA — cada fuente falla por separado; el resto del dashboard sigue.
@@ -579,12 +585,50 @@ function drawChart(id, labels, datasets, opts){
   });
 }
 
+
+// GA4 se consulta por rango completo: los usuarios únicos no son sumables por día.
+async function loadGA4(range){
+  const seq = ++ga4Request, panel = document.getElementById('panel-ga4');
+  const force = ga4Force; ga4Force = false;
+  panel.innerHTML = '<div class="state">Cargando Google Analytics 4…</div>';
+  async function get(r){
+    const q = new URLSearchParams({since:r.start,until:r.end});
+    if(force) q.set('refresh','1');
+    const res = await fetch(`/api/ga4-data?${q}`,{headers:{'x-dashboard-key':getKey()}});
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(res.status===401 ? 'Clave del dashboard incorrecta o ausente.' : (data.detail || data.error || `HTTP ${res.status}`));
+    return data;
+  }
+  try{
+    const compare = canCompare(range);
+    const [current, old] = await Promise.all([get(range),compare ? get(previousRange(range)).catch(e=>({error:e.message})) : Promise.resolve(null)]);
+    if(seq !== ga4Request) return;
+    const delta = (field) => old && !old.error && current[field] != null && old[field] != null ? deltaHtml(current[field],old[field],0,range) : filters.compare ? `<span class="delta">${compare ? 'Comparación no disponible' : 'Sin periodo anterior'}</span>` : '';
+    const flags = [current.meta,old?.meta].filter(Boolean);
+    const notices = [];
+    if(old?.error) notices.push(`No se pudo cargar el periodo anterior: ${esc(old.error)}`);
+    if(flags.some(m=>m.thresholded)) notices.push('GA4 aplicó umbrales de privacidad; algunos datos pueden estar limitados.');
+    if(flags.some(m=>m.sampled)) notices.push('GA4 indica que el reporte contiene datos muestreados.');
+    if(flags.some(m=>m.dataLoss)) notices.push('GA4 agrupó algunos datos en «other».');
+    if(current.meta?.timeZone && current.meta.timeZone !== 'America/Mexico_City') notices.push(`La propiedad usa la zona horaria ${esc(current.meta.timeZone)}, distinta de Ciudad de México.`);
+    const previous = new Map((old?.channels || []).map(x=>[x.channel,x.sessions]));
+    const currentMap = new Map(current.channels.map(x=>[x.channel,x.sessions]));
+    const names = [...new Set([...currentMap.keys(), ...previous.keys()])].sort((a,b)=>(currentMap.get(b)||0)-(currentMap.get(a)||0));
+    const channelRows = names.map(name=>`<tr><td>${esc(name)}</td><td>${currentMap.has(name) ? fmtInt(currentMap.get(name)) : current.meta?.thresholded ? '—' : '0'}</td>${compare?`<td>${old?.error ? '—' : previous.has(name) ? fmtInt(previous.get(name)) : old?.meta?.thresholded ? '—' : '0'}</td>`:''}</tr>`).join('');
+    panel.innerHTML = `${notices.map(n=>`<div class="alert" style="margin-bottom:1rem">${n}</div>`).join('')}
+      <div class="kpis">${kpiHtml('Usuarios activos',current.activeUsers == null ? '—' : fmtInt(current.activeUsers),delta('activeUsers'))}${kpiHtml('Sesiones',current.sessions == null ? '—' : fmtInt(current.sessions),delta('sessions'))}</div>
+      <div class="card"><h2>Sesiones por canal de adquisición</h2><p class="sub">Agrupación predeterminada por sesión en GA4. Los usuarios activos son únicos para el periodo; los datos de GA4 pueden diferir de Ads y Shopify.</p>
+      <div class="table-scroll"><table style="min-width:0"><thead><tr><th>Canal</th><th>Sesiones</th>${compare?'<th>Periodo anterior</th>':''}</tr></thead><tbody>${channelRows || `<tr><td colspan="${compare?3:2}" class="muted">Sin sesiones en este periodo.</td></tr>`}</tbody></table></div></div>`;
+  }catch(e){ if(seq === ga4Request) panel.innerHTML = `<div class="alert err"><b>Google Analytics 4 no cargó.</b> ${esc(e.message)}</div>`; }
+}
+
 function renderAll(){
   const range = resolveRange(filters);
   renderAlerts(range);
   renderResumen(range);
   Object.keys(PLATFORMS).forEach(k => renderPlatform(k, range));
   renderShopify(range);
+  if(document.getElementById('panel-ga4').classList.contains('active')) loadGA4(range);
 }
 
 /* =========================================================================
@@ -600,13 +644,14 @@ document.querySelectorAll('#presets button').forEach(b => b.addEventListener('cl
 document.getElementById('customStart').addEventListener('change', e => { filters.customStart = e.target.value; renderAll(); });
 document.getElementById('customEnd').addEventListener('change', e => { filters.customEnd = e.target.value; renderAll(); });
 document.getElementById('compareToggle').addEventListener('change', e => { filters.compare = e.target.checked; renderAll(); });
-document.getElementById('refreshBtn').addEventListener('click', () => loadAll(true));
+document.getElementById('refreshBtn').addEventListener('click', () => { ga4Force = true; loadAll(true); });
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected','false'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   t.setAttribute('aria-selected','true');
   document.getElementById(`panel-${t.dataset.tab}`).classList.add('active');
   Object.values(charts).forEach(c => c.resize());
+  if(t.dataset.tab === 'ga4') loadGA4(resolveRange(filters));
 }));
 const cs = document.getElementById('customStart'), ce = document.getElementById('customEnd');
 cs.min = ce.min = CONFIG.DATA_START; cs.max = ce.max = todayCdmx();

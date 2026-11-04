@@ -73,6 +73,8 @@ const ORDERS_QUERY = `
         createdAt
         test
         cancelledAt
+        displayFinancialStatus
+        currentTotalPriceSet { shopMoney { amount } }
         taxesIncluded
         subtotalPriceSet { shopMoney { amount } }
         taxLines { priceSet { shopMoney { amount } } }
@@ -109,10 +111,10 @@ async function fetchShopify({ since, until }) {
   const tz = shop.ianaTimezone;
 
   // Widen the UTC query by a day on each side, then filter by local date.
-  const q = `created_at:>=${addDays(since, -1)} created_at:<${addDays(until, 2)}`;
+  const q = `status:any created_at:>=${addDays(since, -1)} created_at:<${addDays(until, 2)}`;
   const byDay = new Map();
   let cursor = null;
-  let excluded = { test: 0, cancelled: 0 };
+  let excluded = { test: 0, cancelled: 0, financialStatus: 0 };
   do {
     const data = await gql(ORDERS_QUERY, { cursor, q });
     for (const o of data.orders.nodes) {
@@ -120,7 +122,9 @@ async function fetchShopify({ since, until }) {
       if (isoToUtc(day) < isoToUtc(since) || isoToUtc(day) > isoToUtc(until)) continue;
       if (o.test) { excluded.test++; continue; }
       if (o.cancelledAt) { excluded.cancelled++; continue; }
-      const d = byDay.get(day) || { date: day, orders: 0, grossSales: 0, refunds: 0, netSales: 0 };
+      if (!o.displayFinancialStatus) throw httpError(502, 'Shopify: falta el estado de pago; no se calculan ventas.');
+      if (!['PAID', 'PARTIALLY_REFUNDED'].includes(o.displayFinancialStatus)) { excluded.financialStatus++; continue; }
+      const d = byDay.get(day) || { date: day, orders: 0, grossSales: 0, refunds: 0, netSales: 0, totalSales: 0 };
       d.orders += 1;
       if (typeof o.taxesIncluded !== 'boolean') throw httpError(502, 'Shopify: falta taxesIncluded; no se calcula ventas.');
       const original = requiredAmount(o.subtotalPriceSet, 'subtotal original');
@@ -132,6 +136,7 @@ async function fetchShopify({ since, until }) {
       d.grossSales += original + (o.taxesIncluded ? 0 : originalTax);
       // Es el reembolso total del pedido: puede incluir impuestos y envío.
       d.refunds += requiredAmount(o.totalRefundedSet, 'reembolso total');
+      d.totalSales += requiredAmount(o.currentTotalPriceSet, 'total actual del pedido');
       d.netSales += current - (o.taxesIncluded ? currentTax : 0);
       byDay.set(day, d);
     }
@@ -144,4 +149,4 @@ async function fetchShopify({ since, until }) {
 }
 
 export default createHandler({ platform: "Shopify", fetcher: fetchShopify });
-export { fetchShopify };
+export { fetchShopify, gql, localDate };

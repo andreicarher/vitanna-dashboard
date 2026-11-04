@@ -82,7 +82,7 @@ async function fetchGoogle({ since, until }) {
   // Primer reporte sin segmentar: la inversión y los clics se leen una sola vez.
   const [raw, account, actions] = await Promise.all([
     gaqlSearch(`
-      SELECT segments.date, campaign.id, campaign.name, campaign.advertising_channel_type,
+      SELECT segments.date, campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type,
         metrics.cost_micros, metrics.impressions, metrics.clicks
       FROM campaign WHERE segments.date BETWEEN '${since}' AND '${until}'
       ORDER BY segments.date ASC
@@ -103,7 +103,7 @@ async function fetchGoogle({ since, until }) {
   // Segundo reporte: SOLO la acción elegida; no trae inversión para evitar duplicarla.
   // all_conversions conserva esa acción aunque sea secundaria en algún objetivo.
   const purchases = await gaqlSearch(`
-    SELECT segments.date, segments.conversion_action, campaign.id, campaign.name,
+    SELECT segments.date, segments.conversion_action, campaign.id, campaign.name, campaign.status,
       campaign.advertising_channel_type, metrics.all_conversions, metrics.all_conversions_value
     FROM campaign WHERE segments.date BETWEEN '${since}' AND '${until}'
       AND segments.conversion_action = '${actionId}' ORDER BY segments.date ASC
@@ -113,7 +113,7 @@ async function fetchGoogle({ since, until }) {
   for (const r of raw) {
     keyed.set(keyOf(r), {
       date: r.segments.date, campaignId: r.campaign.id, campaign: r.campaign.name,
-      channelType: r.campaign.advertisingChannelType,
+      channelType: r.campaign.advertisingChannelType, status: r.campaign.status || null,
       spend: num(r.metrics.costMicros) / 1_000_000,
       impressions: num(r.metrics.impressions), clicks: num(r.metrics.clicks), conversions: 0, revenue: 0,
     });
@@ -123,7 +123,7 @@ async function fetchGoogle({ since, until }) {
     const key = keyOf(r);
     if (!keyed.has(key)) keyed.set(key, {
       date: r.segments.date, campaignId: r.campaign.id, campaign: r.campaign.name,
-      channelType: r.campaign.advertisingChannelType, spend: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0,
+      channelType: r.campaign.advertisingChannelType, status: r.campaign.status || null, spend: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0,
     });
     const row = keyed.get(key);
     row.conversions += num(r.metrics.allConversions);

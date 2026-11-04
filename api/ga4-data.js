@@ -45,4 +45,4 @@ async function fetchGA4(range) {
     meta:{timeZone:totals.metadata?.timeZone || null, thresholded:meta.some(x=>x?.subjectToThresholding), sampled:meta.some(x=>x?.samplingMetadatas?.length), dataLoss:meta.some(x=>x?.dataLossFromOtherRow)}};
 }
 export default createHandler({platform:'Google Analytics 4',fetcher:fetchGA4});
-export {fetchGA4};
+export {fetchGA4, accessToken, report};

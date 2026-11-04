@@ -436,6 +436,18 @@ await test('GA4: usuarios únicos por periodo y sesiones por canal; sin sumar us
   assert.equal(r.statusCode,200); assert.equal(r.body.activeUsers,42); assert.equal(r.body.sessions,90);
   assert.deepEqual(r.body.channels,[{channel:'Paid Social',sessions:56}]); assert.equal(r.body.meta.thresholded,true);
 });
+await test('Web GA4: totales y reportes respetan límite de 10 métricas', async()=>{
+  const {fetchWeb} = await import('../api/ga4-web-data.js');
+  responder=(url,init)=>{
+    if(url.includes('oauth2.googleapis.com'))return {body:{access_token:'fake',expires_in:3600}};
+    const req=JSON.parse(init.body);
+    if(req.metrics.length>10)return {status:400,body:{error:{message:'Requests are allowed up to 10 metrics.'}}};
+    return {body:{rows:[{dimensionValues:req.dimensions.map(()=>({value:'demo'})),metricValues:req.metrics.map(()=>({value:'10'}))}],metadata:{timeZone:'America/Mexico_City'}}};
+  };
+  const data=await fetchWeb({since:'2026-06-01',until:'2026-06-30'});
+  assert.equal(data.reports.totals.status,'ok'); assert.equal(data.reports.totals.rows[0].sessions,10); assert.equal(data.reports.totals.rows[0].activeUsers,10);
+  assert.ok(calls.filter(c=>c.url.includes(':runReport')).every(c=>JSON.parse(c.init.body).metrics.length<=10));
+});
 await test('GA4: error de autorización no inventa ceros', async()=>{
   responder=()=>({status:403,body:{error:{message:'Missing permissions'}}});
   const r=await call(ga4,{since:'2026-07-01',until:'2026-07-02'});

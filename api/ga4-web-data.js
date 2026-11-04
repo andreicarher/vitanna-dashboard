@@ -4,7 +4,8 @@ import {createHandler, requireEnv, httpError, mapLimit} from '../lib/common.js';
 import {accessToken, report} from './ga4-data.js';
 const common=['sessions','activeUsers','engagedSessions','engagementRate','userEngagementDuration','screenPageViews','addToCarts','ecommercePurchases','purchaseRevenue'];
 const specs={
-  totals:{dimensions:[],metrics:[...common,'newUsers','totalUsers']},
+  // runReport permite hasta 10 métricas; solo pedimos las usadas en tarjetas.
+  totals:{dimensions:[],metrics:['sessions','activeUsers','newUsers','totalUsers','engagementRate','userEngagementDuration','screenPageViews','purchaseRevenue']},
   daily:{dimensions:['date'],metrics:['sessions','ecommercePurchases','purchaseRevenue']},
   channels:{dimensions:['sessionDefaultChannelGroup'],metrics:common},
   sourceMedium:{dimensions:['sessionSourceMedium'],metrics:common},

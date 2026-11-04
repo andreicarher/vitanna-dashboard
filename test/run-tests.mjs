@@ -412,13 +412,13 @@ await test("Meta detalle: sigue paginación y conserva eventos separados",async(
 const {fetchCreative,imageUrl}=await import('../api/meta-creative-data.js');
 const {fetchAudience}=await import('../api/meta-audience-data.js');
 await test('Creativos Meta: métricas por periodo, miniaturas y exclusión Amazon',async()=>{
- responder=(url)=>{const u=new URL(url);if(u.searchParams.has('ids'))return {body:{'123':{creative:{thumbnail_url:'https://scontent.fbcdn.net/a.jpg'}}}};
+ responder=(url,init)=>{if(init.method==='POST')return {body:[{code:200,body:JSON.stringify({creative:{thumbnail_url:'https://scontent.fbcdn.net/a.jpg'}})}]};
  return {body:{data:[{campaign_id:'10',campaign_name:'PRO Tienda',adset_id:'20',adset_name:'PRO',ad_id:'123',ad_name:'Anuncio PRO',account_currency:'MXN',objective:'OUTCOME_SALES',spend:'100',impressions:'2000',reach:'500',unique_inline_link_click_ctr:'2.5',actions:[{action_type:'offsite_conversion.fb_pixel_purchase',value:'2'}],action_values:[{action_type:'offsite_conversion.fb_pixel_purchase',value:'600'}]},{campaign_name:'Amazon campaña',ad_id:'124',spend:'50'}]}};};
  const x=await fetchCreative({since:'2026-06-01',until:'2026-06-30'});assert.equal(x.rows.length,1);assert.equal(x.rows[0].reach,500);assert.equal(x.rows[0].uniqueCtr,2.5);assert.equal(x.rows[0].purchases,2);assert.match(x.rows[0].image,/fbcdn/);assert.equal(x.media.withImage,1);assert.equal(imageUrl('https://malicious.example/a'),null);
  assert.equal(calls.filter(c=>new URL(c.url).searchParams.has('time_increment')).length,0);
 });
 await test('Creativos Meta: no desaparecen las métricas si falla la imagen',async()=>{
- responder=(url)=>new URL(url).searchParams.has('ids')?{status:403,body:{error:{message:'Sin acceso a imágenes'}}}:{body:{data:[{ad_id:'123',ad_name:'Anuncio',campaign_name:'Tienda',spend:'9',impressions:'10',account_currency:'MXN'}]}};
+ responder=(url,init)=>init.method==='POST'?{status:403,body:{error:{message:'Sin acceso a imágenes'}}}:{body:{data:[{ad_id:'123',ad_name:'Anuncio',campaign_name:'Tienda',spend:'9',impressions:'10',account_currency:'MXN'}]}};
  const x=await fetchCreative({since:'2026-06-01',until:'2026-06-30'});assert.equal(x.rows[0].spend,9);assert.equal(x.rows[0].image,null);assert.match(x.media.detail,/Sin acceso/);
 });
 await test('Audiencias Meta: cinco desgloses independientes excluyen Amazon',async()=>{

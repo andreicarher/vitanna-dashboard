@@ -14,7 +14,14 @@ async function insights(range){
 }
 async function thumbnails(ids){
  const chunks=[];for(let i=0;i<ids.length;i+=40)chunks.push(ids.slice(i,i+40));const images={},issues=[];
- await mapLimit(chunks,2,async group=>{try{const q=new URLSearchParams({ids:group.join(','),fields:'creative{thumbnail_url,image_url}',access_token:process.env.META_ACCESS_TOKEN});const response=await fetch(`https://graph.facebook.com/${VERSION()}/?${q}`),data=await response.json().catch(()=>({}));if(!response.ok||data.error)throw new Error(data.error?.message||`HTTP ${response.status}`);for(const id of group){const c=data[id]?.creative;images[id]=imageUrl(c?.image_url)||imageUrl(c?.thumbnail_url);}}catch(e){issues.push(e.message);}});
+ await mapLimit(chunks,2,async group=>{try{
+  // Meta v26 ya no permite GET /?ids=...; usa solicitudes en lote.
+  const batch=group.map(id=>({method:'GET',relative_url:`${id}?fields=${encodeURIComponent('creative{thumbnail_url,image_url}')}`}));
+  const body=new URLSearchParams({batch:JSON.stringify(batch),access_token:process.env.META_ACCESS_TOKEN});
+  const response=await fetch(`https://graph.facebook.com/${VERSION()}/`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()});
+  const data=await response.json().catch(()=>({}));if(!response.ok||data.error)throw new Error(data.error?.message||`HTTP ${response.status}`);if(!Array.isArray(data))throw new Error('Respuesta de imágenes incompleta.');
+  for(let i=0;i<group.length;i++){const item=data[i];let parsed={};try{parsed=JSON.parse(item?.body||'{}');}catch{}if(!item||item.code>=400||parsed.error){issues.push(parsed.error?.message||`HTTP ${item?.code||'desconocido'}`);continue;}const c=parsed.creative;images[group[i]]=imageUrl(c?.image_url)||imageUrl(c?.thumbnail_url);}
+ }catch(e){issues.push(e.message);}});
  return {images,detail:issues.length?`Algunas imágenes no se pudieron consultar: ${issues[0]}`:null};
 }
 async function fetchCreative(range){

@@ -4,659 +4,123 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vitanna · Dashboard de performance</title>
-<!-- Be Vietnam Pro es la tipografía de textos del manual y está en Google Fonts.
-     Arquitecta (títulos) y Faro no están en un CDN público: los títulos usan
-     Be Vietnam Pro ExtraBold como sustituto. Si consiguen los archivos .woff2
-     con licencia web, se cargan con @font-face y se cambia --font-display. -->
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  *{ margin:0; padding:0; box-sizing:border-box; }
-  :root{
-    /* Manual Vitanna 2026: Core Black, Pure White, escala de grises y Warm Greys.
-       Los colores de línea de producto NO se usan aquí: el manual pide no
-       mezclarlos en una misma pieza. */
-    --black:#000000; --white:#FFFFFF;
-    --g90:#1A1A1A; --g80:#242424; --g70:#4D4D4D; --g50:#808080;
-    --wg1:#D7D2CB; --wg3:#BFB8AF; --wg5:#ACA39A;
-    --line:rgba(255,255,255,.12);
-    --text:var(--white); --muted:var(--wg3);
-    /* Semánticos: se quedan rojo/verde/ámbar sin importar la marca */
-    --up:#3FBF73; --down:#E5484D; --warn:#F2B544;
-    /* Series por plataforma (solo grises de marca) */
-    --c-meta:var(--wg1); --c-google:var(--wg5); --c-tiktok:#6E6E6E; --c-revenue:var(--white);
-    --font-body:'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --font-display:'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  }
-  html{ background:var(--black); }
-  body{ font-family:var(--font-body); background:var(--black); color:var(--text); line-height:1.5; font-size:15px; }
-  button, input{ font:inherit; color:inherit; }
-  :focus-visible{ outline:2px solid var(--white); outline-offset:2px; }
-  .wrap{ max-width:1440px; margin:0 auto; padding:0 2rem; }
+*{margin:0;padding:0;box-sizing:border-box}:root{--black:#000000;--white:#FFFFFF;--g90:#1A1A1A;--g80:#242424;--g70:#4D4D4D;--g50:#808080;--wg1:#D7D2CB;--wg3:#BFB8AF;--wg5:#ACA39A;--line:rgba(255,255,255,.12);--text:var(--white);--muted:var(--wg3);--up:#3FBF73;--down:#E5484D;--warn:#F2B544;--c-meta:var(--wg1);--c-google:var(--wg5);--c-tiktok:#6E6E6E;--c-revenue:var(--white);--font-body:"Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;--font-display:"Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif}html{background:var(--black)}body{font-family:var(--font-body);background:var(--black);color:var(--text);line-height:1.5;font-size:15px}button,input{font:inherit;color:inherit}:focus-visible{outline:2px solid var(--white);outline-offset:2px}.wrap{max-width:1440px;margin:0 auto;padding:0 2rem}header{border-bottom:1px solid var(--line)}.head{display:flex;justify-content:space-between;align-items:center;gap:1.5rem;flex-wrap:wrap;padding-top:1.5rem;padding-bottom:1.5rem}.brand{display:flex;align-items:center;gap:1.25rem}.brand img{height:26px;width:auto;display:block}.brand .divider{width:1px;height:34px;background:var(--white);opacity:.8}.brand h1{font-family:var(--font-display);font-weight:500;font-size:1rem;letter-spacing:.02em;color:var(--muted)}.head-right{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}.chip{font-size:.78rem;font-weight:500;padding:.35rem .7rem;border-radius:999px;border:1px solid var(--line);display:inline-flex;align-items:center;gap:.45rem;color:var(--muted);white-space:nowrap}.chip i{width:7px;height:7px;border-radius:50%;background:var(--g50);display:inline-block}.chip.ok i{background:var(--up)}.chip.err i{background:var(--down)}.chip.load i{background:var(--warn)}.chip.err{color:var(--text);border-color:#e5484d80}.btn{background:var(--white);color:var(--black);border:0;border-radius:6px;padding:.5rem .95rem;font-weight:600;font-size:.85rem;cursor:pointer}.btn:disabled{opacity:.5;cursor:wait}.filters{position:sticky;top:0;z-index:20;background:#000000eb;backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}.filters .wrap{display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;padding-top:.85rem;padding-bottom:.85rem}.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}.seg button{background:transparent;border:0;padding:.45rem .85rem;font-size:.84rem;color:var(--muted);cursor:pointer;border-right:1px solid var(--line)}.seg button:last-child{border-right:0}.seg button[aria-pressed=true]{background:var(--white);color:var(--black);font-weight:600}.custom{display:none;align-items:center;gap:.4rem}.custom.show{display:flex}.custom input{background:var(--g90);border:1px solid var(--line);border-radius:6px;padding:.35rem .5rem;font-size:.82rem;color-scheme:dark}.check{display:flex;align-items:center;gap:.45rem;font-size:.84rem;color:var(--muted);cursor:pointer}.check input{accent-color:var(--white);width:15px;height:15px}nav.tabs{border-bottom:1px solid var(--line)}nav.tabs .wrap{display:flex;gap:2rem;overflow-x:auto}.tab{background:none;border:0;padding:1rem 0 .85rem;font-weight:600;font-size:.92rem;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}.tab[aria-selected=true]{color:var(--white);border-bottom-color:var(--white)}.panel{display:none;padding:2rem 0 4rem}.panel.active{display:block}.alerts{display:grid;gap:.75rem;margin-bottom:1.75rem}.alert{border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:8px;padding:.85rem 1.1rem;font-size:.86rem;color:var(--muted);background:var(--g90)}.alert b{color:var(--text);font-weight:600}.alert.err{border-left-color:var(--down)}.alert code{background:var(--black);padding:.05rem .35rem;border-radius:4px;font-size:.8rem}.hero{display:grid;grid-template-columns:minmax(280px,1.1fr) 2fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:2rem}.hero>div{background:var(--black)}.hero-main{padding:2rem 2rem 1.75rem;position:relative;overflow:hidden}.hero-main:after{content:"";position:absolute;right:-60px;top:-40px;width:180px;height:320px;background:var(--g90);transform:skew(-40deg);pointer-events:none}.hero-main>*{position:relative;z-index:1}.hero-label{font-size:.86rem;color:var(--muted)}.hero-value{font-family:var(--font-display);font-weight:800;font-size:clamp(3rem,6vw,4.6rem);line-height:1;margin:.6rem 0 .5rem;letter-spacing:-.02em}.hero-note{font-size:.8rem;color:var(--muted);max-width:34ch}.hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line)}.hero-grid .kpi{padding:1.4rem 1.5rem}.hero-grid .kpi{border:0;border-radius:0}.executive-intro{border-top:4px solid var(--wg1);padding-top:1rem;margin-bottom:1rem}.eyebrow{text-transform:uppercase;font-size:.75rem;letter-spacing:.12em;color:var(--muted);font-weight:600}.executive-intro h2{font-size:1.35rem}.executive-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:2rem}.executive-kpis .kpi{border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}.executive-kpis .kpi-value{overflow-wrap:anywhere}.executive-kpis .focus{color:var(--wg1)}@media (max-width:1000px){.executive-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}@media (max-width:620px){.executive-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:2rem}.kpi{background:var(--black);padding:1.15rem 1.25rem}.kpi-label{font-size:.8rem;color:var(--muted)}.kpi-value{font-family:var(--font-display);font-weight:800;font-size:1.55rem;line-height:1.15;margin-top:.3rem}.delta{font-size:.76rem;font-weight:600;margin-top:.3rem;color:var(--g50)}.delta.good{color:var(--up)}.delta.bad{color:var(--down)}.card{border:1px solid var(--line);border-radius:12px;padding:1.5rem;margin-bottom:2rem;background:var(--black)}.card h2{font-family:var(--font-display);font-weight:800;font-size:1.05rem;margin-bottom:.25rem}.card .sub{font-size:.82rem;color:var(--muted);margin-bottom:1.25rem}.chart-box{position:relative;height:360px}.table-scroll{overflow-x:auto}#panel-ga4 th:first-child,#panel-ga4 td:first-child{min-width:100px}#panel-ga4 th,#panel-ga4 td{white-space:normal}table{width:100%;border-collapse:collapse;min-width:820px;font-variant-numeric:tabular-nums}th{text-align:right;font-weight:500;font-size:.78rem;color:var(--muted);padding:.6rem .75rem;border-bottom:1px solid var(--line);white-space:nowrap}td{text-align:right;padding:.65rem .75rem;border-bottom:1px solid rgba(255,255,255,.06);font-size:.86rem;white-space:nowrap}th:first-child,td:first-child{text-align:left;white-space:normal;min-width:220px}tr.total td{font-weight:700;border-top:1px solid var(--line);border-bottom:0}td .dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:.5rem;vertical-align:middle}.tag{font-size:.7rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 .3rem;margin-left:.4rem}.muted{color:var(--muted)}.state{text-align:center;padding:5rem 1rem;color:var(--muted)}.spinner{width:30px;height:30px;border:2px solid var(--g70);border-top-color:var(--white);border-radius:50%;margin:0 auto 1rem;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion: reduce){.spinner{animation:none}}@media (max-width:760px){.wrap{padding-left:1rem;padding-right:1rem}.hero{grid-template-columns:1fr}.hero-grid{grid-template-columns:repeat(2,1fr)}.brand h1,.brand .divider{display:none}.seg{max-width:100%;overflow-x:auto}.seg button{white-space:nowrap}}
 
-  /* Header */
-  header{ border-bottom:1px solid var(--line); }
-  .head{ display:flex; justify-content:space-between; align-items:center; gap:1.5rem; flex-wrap:wrap; padding-top:1.5rem; padding-bottom:1.5rem; }
-  .brand{ display:flex; align-items:center; gap:1.25rem; }
-  .brand img{ height:26px; width:auto; display:block; }
-  .brand .divider{ width:1px; height:34px; background:var(--white); opacity:.8; }
-  .brand h1{ font-family:var(--font-display); font-weight:500; font-size:1rem; letter-spacing:.02em; color:var(--muted); }
-  .head-right{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
-  .chip{ font-size:.78rem; font-weight:500; padding:.35rem .7rem; border-radius:999px; border:1px solid var(--line); display:inline-flex; align-items:center; gap:.45rem; color:var(--muted); white-space:nowrap; }
-  .chip i{ width:7px; height:7px; border-radius:50%; background:var(--g50); display:inline-block; }
-  .chip.ok i{ background:var(--up); } .chip.err i{ background:var(--down); } .chip.load i{ background:var(--warn); }
-  .chip.err{ color:var(--text); border-color:rgba(229,72,77,.5); }
-  .btn{ background:var(--white); color:var(--black); border:0; border-radius:6px; padding:.5rem .95rem; font-weight:600; font-size:.85rem; cursor:pointer; }
-  .btn:disabled{ opacity:.5; cursor:wait; }
-
-  /* Filtros */
-  .filters{ position:sticky; top:0; z-index:20; background:rgba(0,0,0,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
-  .filters .wrap{ display:flex; align-items:center; gap:1.25rem; flex-wrap:wrap; padding-top:.85rem; padding-bottom:.85rem; }
-  .seg{ display:flex; border:1px solid var(--line); border-radius:7px; overflow:hidden; }
-  .seg button{ background:transparent; border:0; padding:.45rem .85rem; font-size:.84rem; color:var(--muted); cursor:pointer; border-right:1px solid var(--line); }
-  .seg button:last-child{ border-right:0; }
-  .seg button[aria-pressed="true"]{ background:var(--white); color:var(--black); font-weight:600; }
-  .custom{ display:none; align-items:center; gap:.4rem; }
-  .custom.show{ display:flex; }
-  .custom input{ background:var(--g90); border:1px solid var(--line); border-radius:6px; padding:.35rem .5rem; font-size:.82rem; color-scheme:dark; }
-  .check{ display:flex; align-items:center; gap:.45rem; font-size:.84rem; color:var(--muted); cursor:pointer; }
-  .check input{ accent-color:var(--white); width:15px; height:15px; }
-
-  /* Tabs */
-  nav.tabs{ border-bottom:1px solid var(--line); }
-  nav.tabs .wrap{ display:flex; gap:2rem; overflow-x:auto; }
-  .tab{ background:none; border:0; padding:1rem 0 .85rem; font-weight:600; font-size:.92rem; color:var(--muted); border-bottom:2px solid transparent; cursor:pointer; white-space:nowrap; }
-  .tab[aria-selected="true"]{ color:var(--white); border-bottom-color:var(--white); }
-  .panel{ display:none; padding:2rem 0 4rem; }
-  .panel.active{ display:block; }
-
-  /* Alertas */
-  .alerts{ display:grid; gap:.75rem; margin-bottom:1.75rem; }
-  .alert{ border:1px solid var(--line); border-left:3px solid var(--warn); border-radius:8px; padding:.85rem 1.1rem; font-size:.86rem; color:var(--muted); background:var(--g90); }
-  .alert b{ color:var(--text); font-weight:600; }
-  .alert.err{ border-left-color:var(--down); }
-  .alert code{ background:var(--black); padding:.05rem .35rem; border-radius:4px; font-size:.8rem; }
-
-  /* Hero (solo Resumen): la cifra que importa al negocio */
-  .hero{ display:grid; grid-template-columns:minmax(280px,1.1fr) 2fr; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:2rem; }
-  .hero > div{ background:var(--black); }
-  .hero-main{ padding:2rem 2rem 1.75rem; position:relative; overflow:hidden; }
-  .hero-main::after{ /* corte diagonal del isotipo como único gesto gráfico */
-    content:''; position:absolute; right:-60px; top:-40px; width:180px; height:320px; background:var(--g90);
-    transform:skewX(-40deg); pointer-events:none; }
-  .hero-main > *{ position:relative; z-index:1; }
-  .hero-label{ font-size:.86rem; color:var(--muted); }
-  .hero-value{ font-family:var(--font-display); font-weight:800; font-size:clamp(3rem,6vw,4.6rem); line-height:1; margin:.6rem 0 .5rem; letter-spacing:-.02em; }
-  .hero-note{ font-size:.8rem; color:var(--muted); max-width:34ch; }
-  .hero-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); }
-  .hero-grid .kpi{ padding:1.4rem 1.5rem; }
-  .hero-grid .kpi{ border:0; border-radius:0; }
-
-  .kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:2rem; }
-  .kpi{ background:var(--black); padding:1.15rem 1.25rem; }
-  .kpi-label{ font-size:.8rem; color:var(--muted); }
-  .kpi-value{ font-family:var(--font-display); font-weight:800; font-size:1.55rem; line-height:1.15; margin-top:.3rem; }
-  .delta{ font-size:.76rem; font-weight:600; margin-top:.3rem; color:var(--g50); }
-  .delta.good{ color:var(--up); } .delta.bad{ color:var(--down); }
-
-  .card{ border:1px solid var(--line); border-radius:12px; padding:1.5rem; margin-bottom:2rem; background:var(--black); }
-  .card h2{ font-family:var(--font-display); font-weight:800; font-size:1.05rem; margin-bottom:.25rem; }
-  .card .sub{ font-size:.82rem; color:var(--muted); margin-bottom:1.25rem; }
-  .chart-box{ position:relative; height:360px; }
-  .table-scroll{ overflow-x:auto; }
-  #panel-ga4 th:first-child, #panel-ga4 td:first-child { min-width: 100px; }
-  #panel-ga4 th, #panel-ga4 td { white-space: normal; }
-  table{ width:100%; border-collapse:collapse; min-width:820px; font-variant-numeric:tabular-nums; }
-  th{ text-align:right; font-weight:500; font-size:.78rem; color:var(--muted); padding:.6rem .75rem; border-bottom:1px solid var(--line); white-space:nowrap; }
-  td{ text-align:right; padding:.65rem .75rem; border-bottom:1px solid rgba(255,255,255,.06); font-size:.86rem; white-space:nowrap; }
-  th:first-child, td:first-child{ text-align:left; white-space:normal; min-width:220px; }
-  tr.total td{ font-weight:700; border-top:1px solid var(--line); border-bottom:0; }
-  td .dot{ display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:.5rem; vertical-align:middle; }
-  .tag{ font-size:.7rem; color:var(--muted); border:1px solid var(--line); border-radius:4px; padding:0 .3rem; margin-left:.4rem; }
-  .muted{ color:var(--muted); }
-
-  .state{ text-align:center; padding:5rem 1rem; color:var(--muted); }
-  .spinner{ width:30px; height:30px; border:2px solid var(--g70); border-top-color:var(--white); border-radius:50%; margin:0 auto 1rem; animation:spin 1s linear infinite; }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce){ .spinner{ animation:none; } }
-  @media (max-width:760px){ .wrap{ padding-left:1rem; padding-right:1rem; } .hero{ grid-template-columns:1fr; } .hero-grid{ grid-template-columns:repeat(2,1fr); } .brand h1, .brand .divider{ display:none; } .seg{ max-width:100%; overflow-x:auto; } .seg button{ white-space:nowrap; } }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="wrap head">
-    <div class="brand">
-      <img alt="Vitanna" src="data:image/png;base64,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">
-      <span class="divider" aria-hidden="true"></span>
-      <h1>Performance digital</h1>
-    </div>
-    <div class="head-right">
-      <div id="sourceChips" style="display:flex;gap:.4rem;flex-wrap:wrap"></div>
-      <button class="btn" id="refreshBtn" type="button">Actualizar datos</button>
-    </div>
-  </div>
+<div class="wrap head">
+<div class="brand">
+<img alt="Vitanna" src="data:image/webp;base64,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">
+<span class="divider" aria-hidden="true"></span>
+<h1>Performance digital</h1>
+</div>
+<div class="head-right">
+<div id="sourceChips" style="display:flex;gap:.4rem;flex-wrap:wrap"></div>
+<button class="btn" id="refreshBtn" type="button">Actualizar datos</button>
+</div>
+</div>
 </header>
 
 <div class="filters">
-  <div class="wrap">
-    <div class="seg" role="group" aria-label="Periodo" id="presets">
-      <button type="button" data-preset="7">7 días</button>
-      <button type="button" data-preset="30" aria-pressed="true">30 días</button>
-      <button type="button" data-preset="thisMonth">Este mes</button>
-      <button type="button" data-preset="lastMonth">Mes anterior</button>
-      <button type="button" data-preset="ytd">Desde 2026</button>
-      <button type="button" data-preset="custom">Personalizado</button>
-    </div>
-    <div class="custom" id="customRange">
-      <input type="date" id="customStart" aria-label="Desde"> <span class="muted">a</span> <input type="date" id="customEnd" aria-label="Hasta">
-    </div>
-    <label class="check"><input type="checkbox" id="compareToggle" checked> Comparar con el periodo anterior</label>
-    <span class="check">Campañas filtradas por nombre de destino</span>
-  </div>
+<div class="wrap">
+<div class="seg" role="group" aria-label="Periodo" id="presets">
+<button type="button" data-preset="today">Hoy</button>
+<button type="button" data-preset="yesterday">Ayer</button>
+<button type="button" data-preset="7">7 días</button>
+<button type="button" data-preset="30" aria-pressed="true">30 días</button>
+<button type="button" data-preset="thisMonth">Este mes</button>
+<button type="button" data-preset="lastMonth">Mes anterior</button>
+<button type="button" data-preset="ytd">Desde 2026</button>
+<button type="button" data-preset="custom">Personalizado</button>
+</div>
+<div class="custom" id="customRange">
+<input type="date" id="customStart" aria-label="Desde"> <span class="muted">a</span> <input type="date" id="customEnd" aria-label="Hasta">
+</div>
+<label class="check"><input type="checkbox" id="compareToggle" checked> Comparar con el periodo anterior</label>
+<span class="check">Campañas filtradas por nombre de destino</span><span class="check" id="visibleRange"></span>
+</div>
 </div>
 
 <nav class="tabs" aria-label="Secciones">
-  <div class="wrap" role="tablist">
-    <button class="tab" role="tab" data-tab="resumen" aria-selected="true">Resumen</button>
-    <button class="tab" role="tab" data-tab="meta" aria-selected="false">Meta</button>
-    <button class="tab" role="tab" data-tab="google" aria-selected="false">Google</button>
-    <button class="tab" role="tab" data-tab="tiktok" aria-selected="false">TikTok</button>
-    <button class="tab" role="tab" data-tab="shopify" aria-selected="false">Shopify</button>
-    <button class="tab" role="tab" data-tab="ga4" aria-selected="false">Analytics 4</button>
-  </div>
+<div class="wrap" role="tablist">
+<button class="tab" role="tab" data-tab="resumen" aria-selected="true">Resumen</button>
+<button class="tab" role="tab" data-tab="meta" aria-selected="false">Meta Ads</button>
+<button class="tab" role="tab" data-tab="creativos" aria-selected="false">Creativos Meta</button>
+<button class="tab" role="tab" data-tab="tiktok" aria-selected="false">TikTok Ads</button>
+<button class="tab" role="tab" data-tab="google" aria-selected="false">Google Ads</button>
+<button class="tab" role="tab" data-tab="audiencias" aria-selected="false">Audiencias</button>
+<button class="tab" role="tab" data-tab="productos" aria-selected="false">Productos y tienda</button>
+<button class="tab" role="tab" data-tab="ga4" aria-selected="false">Web (GA4)</button>
+</div>
 </nav>
 
 <main class="wrap">
-  <div id="loading" class="state"><div class="spinner"></div>Conectando con Meta, Google, TikTok y Shopify…</div>
-  <div id="alerts" class="alerts" style="margin-top:2rem"></div>
+<div id="demoNotice" class="alert" style="display:none;margin-top:1rem"><b>Modo demostración.</b> Todas las cifras son de ejemplo; no se consultan las APIs.</div>
+<div id="loading" class="state"><div class="spinner"></div>Conectando con Meta, Google, TikTok y Shopify…</div>
+<div id="alerts" class="alerts" style="margin-top:2rem"></div>
 
-  <section class="panel active" id="panel-resumen">
-    <div class="hero">
-      <div class="hero-main">
-        <div class="hero-label">ROAS total (ventas Shopify sin IVA ÷ inversión)</div>
-        <div class="hero-value" id="heroMer">—</div>
-        <div class="delta" id="heroMerDelta"></div>
-        <p class="hero-note" id="heroNote"></p>
-      </div>
-      <div class="hero-grid" id="heroGrid"></div>
-    </div>
-    <div class="card">
-      <h2>Inversión y ventas</h2>
-      <p class="sub" id="mainChartSub">Barras: inversión por plataforma. Línea: ventas netas de Shopify.</p>
-      <div class="chart-box"><canvas id="chart-resumen"></canvas></div>
-    </div>
-    <div class="card">
-      <h2>Por plataforma</h2>
-      <p class="sub">Conversiones y valor según cada plataforma. Google: solo Google Shopping App Purchase (todas las conversiones, por fecha de interacción). Pueden solaparse; no se suman como pedidos únicos.</p>
-      <div class="table-scroll"><table id="table-resumen"></table></div>
-    </div>
-  </section>
+<section class="panel active" id="panel-resumen">
+<div class="executive-intro"><p class="eyebrow">Resumen ejecutivo</p><h2>Indicadores clave</h2><p class="sub" id="heroNote"></p></div>
+<div class="executive-kpis" id="heroGrid"></div>
+<div class="card"><div class="executive-intro"><p class="eyebrow">Rendimiento</p><h2>Evolución semanal</h2></div><p class="sub">Semanas de lunes a domingo; * indica semana recortada por el periodo. CAC y clientes semanales requieren consulta individual.</p><div class="chart-box"><canvas id="chart-weekly" aria-label="Evolución semanal de inversión, ventas netas, pedidos y ROAS" role="img"></canvas></div><div class="table-scroll"><table><thead><tr><th>Semana</th><th>Inversión</th><th>Pedidos</th><th>Ventas netas</th><th>ROAS blended</th><th>CAC</th><th>Clientes nuevos</th></tr></thead><tbody id="weekly-body"></tbody></table></div></div>
+<div class="card">
+<h2>Inversión y ventas</h2>
+<p class="sub" id="mainChartSub">Barras: inversión por plataforma. Línea: ventas netas de Shopify.</p>
+<div class="chart-box"><canvas id="chart-resumen"></canvas></div>
+</div>
+<div class="card"><div class="executive-intro"><p class="eyebrow">Vista anual</p><h2>Desglose mensual</h2></div><p class="sub">Enero hasta hoy, independiente del filtro. Inversión por canal, ventas netas y pedidos. Fuentes no conectadas quedan fuera.</p><div class="chart-box"><canvas id="chart-monthly" role="img" aria-label="Inversión mensual, ventas netas y pedidos"></canvas></div><div class="table-scroll"><table><thead><tr><th>Mes</th><th>Meta</th><th>Google</th><th>TikTok</th><th>Ventas netas</th><th>Pedidos</th></tr></thead><tbody id="monthly-body"></tbody></table></div></div>
+<div class="card"><div class="executive-intro"><p class="eyebrow">Clientes</p><h2>Adquisición vs. retención</h2></div><p class="sub">Personas únicas por periodo; tickets netos por pedido. Datos provisionales, sujetos a identidad e historial completo.</p><div class="kpis" id="cohortGrid"></div></div>
+<div class="card">
+<h2>Por plataforma</h2>
+<p class="sub">Conversiones y valor según cada plataforma. Google: solo Google Shopping App Purchase (todas las conversiones, por fecha de interacción). Pueden solaparse; no se suman como pedidos únicos.</p>
+<div class="table-scroll"><table id="table-resumen"></table></div>
+</div>
+<div class="card" id="amazon-card">
+<h2>Campañas tráfico a Amazon</h2>
+<p class="sub">Por canal y periodo. En móvil, desliza la tabla para ver todas las métricas. La identificación es por nombre: verifica que las campañas apunten a Amazon. Esta inversión se excluye del ROAS de Shopify. No se suman personas únicas entre canales.</p>
+<div class="table-scroll"><table><thead><tr><th>Canal</th><th>Inversión</th><th>Alcance</th><th>Impresiones</th><th>Frecuencia</th><th>Clics únicos en enlace</th><th>CPC único en enlace</th><th>Visitas a página destino</th></tr></thead><tbody id="amazon-body"><tr><td colspan="8" class="muted">Pendiente de carga.</td></tr></tbody></table></div>
+<div id="amazon-notes" class="sub" style="margin-top:1rem"></div>
+</div>
+</section>
 
-  <section class="panel" id="panel-meta"></section>
-  <section class="panel" id="panel-google"></section>
-  <section class="panel" id="panel-tiktok"></section>
+<section class="panel" id="panel-meta"></section>
+<section class="panel" id="panel-creativos" aria-live="polite"><div class="state">Selecciona Creativos Meta para cargar los datos.</div></section>
+<section class="panel" id="panel-audiencias"><div class="alert">Los desgloses de audiencia aún no están disponibles para este informe.</div></section>
+<section class="panel" id="panel-productos"><div class="alert">El desglose de productos y tienda aún está pendiente de conciliación.</div></section>
+<section class="panel" id="panel-google"></section>
+<section class="panel" id="panel-tiktok"></section>
 
-  <section class="panel" id="panel-shopify">
-    <div class="kpis" id="kpis-shopify"></div>
-    <div class="card">
-      <h2>Pedidos y ventas</h2>
-      <p class="sub">Excluye pedidos de prueba y cancelados. Fechas en la zona horaria de la tienda. Los importes se asignan a la fecha de creación del pedido y se actualizan con sus reembolsos posteriores. Las ventas excluyen el envío; los reembolsos totales del pedido pueden incluirlo. Datos pendientes de conciliación.</p>
-      <div class="chart-box"><canvas id="chart-shopify"></canvas></div>
-    </div>
-  </section>
-  <section class="panel" id="panel-ga4" aria-live="polite"><div class="state">Selecciona Analytics 4 para cargar los datos.</div></section>
+<section class="panel" id="panel-shopify">
+<div class="kpis" id="kpis-shopify"></div>
+<div class="card">
+<h2>Pedidos y ventas</h2>
+<p class="sub">Excluye pedidos de prueba y cancelados. Fechas en la zona horaria de la tienda. Los importes se asignan a la fecha de creación del pedido y se actualizan con sus reembolsos posteriores. Las ventas excluyen el envío; los reembolsos totales del pedido pueden incluirlo. Datos pendientes de conciliación.</p>
+<div class="chart-box"><canvas id="chart-shopify"></canvas></div>
+</div>
+</section>
+<section class="panel" id="panel-ga4" aria-live="polite"><div class="state">Selecciona Analytics 4 para cargar los datos.</div></section>
 </main>
 
 <script>
-/* =========================================================================
-   CONFIG — supuestos que hay que confirmar con Vitanna (ver README)
-   ========================================================================= */
-const CONFIG = {
-  CURRENCY: 'MXN',
-  // Qué cuenta como "ventas" de Shopify para el ROAS total.
-  // netSales = ventas sin IVA, ya netas de reembolsos (confirmado por Vitanna).
-  SHOPIFY_REVENUE_FIELD: 'netSales',
-  // Campañas que llevan a Amazon: su venta no aparece en Shopify.
-  AMAZON_PATTERN: /amazon/i,
-  // Desde cuándo se descargan datos (todo lo demás filtra en el navegador).
-  DATA_START: '2026-01-01',
-  // Si el rango tiene más de estos días, la gráfica agrupa por semana.
-  WEEKLY_THRESHOLD_DAYS: 62,
-};
+const CONFIG={CURRENCY:"MXN",SHOPIFY_REVENUE_FIELD:"netSales",AMAZON_PATTERN:/amazon/i,DATA_START:"2026-01-01",WEEKLY_THRESHOLD_DAYS:62},PLATFORMS={meta:{name:"Meta",endpoint:"/api/meta-data",color:"--c-meta"},google:{name:"Google",endpoint:"/api/google-ads-data",color:"--c-google"},tiktok:{name:"TikTok",endpoint:"/api/tiktok-data",color:"--c-tiktok"}},SHOPIFY={name:"Shopify",endpoint:"/api/shopify-data"},MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"],css=e=>getComputedStyle(document.documentElement).getPropertyValue(e).trim(),fmtMoney=e=>Number.isFinite(e)?e.toLocaleString("es-MX",{style:"currency",currency:CONFIG.CURRENCY,maximumFractionDigits:0}):"—",fmtMoney2=e=>Number.isFinite(e)?e.toLocaleString("es-MX",{style:"currency",currency:CONFIG.CURRENCY,maximumFractionDigits:2}):"—",fmtInt=e=>Number.isFinite(e)?Math.round(e).toLocaleString("es-MX"):"—",fmtPct=e=>Number.isFinite(e)?(e*100).toFixed(2)+"%":"—",fmtX=e=>Number.isFinite(e)&&e>=0?e.toFixed(2)+"x":"—",safeDiv=(e,t)=>t?e/t:NaN,esc=e=>String(e??"").replace(/[&<>"']/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[t]),pad=e=>String(e).padStart(2,"0"),toIso=e=>`${e.getFullYear()}-${pad(e.getMonth()+1)}-${pad(e.getDate())}`,todayCdmx=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Mexico_City",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date),fromIso=e=>{const[t,s,o]=e.split("-").map(Number);return new Date(t,s-1,o)},addDays=(e,t)=>{const s=fromIso(e);return s.setDate(s.getDate()+t),toIso(s)},daysBetween=(e,t)=>Math.round((fromIso(t)-fromIso(e))/864e5)+1,fmtDay=e=>{const[t,s,o]=e.split("-");return`${+o} ${MES[+s-1]}`};function weekStart(e){const t=fromIso(e),s=(t.getDay()+6)%7;return t.setDate(t.getDate()-s),toIso(t)}function resolveRange(e,t=todayCdmx()){const s=fromIso(t);switch(e.preset){case"today":return{start:t,end:t};case"yesterday":return{start:addDays(t,-1),end:addDays(t,-1)};case"7":return{start:addDays(t,-6),end:t};case"30":return{start:addDays(t,-29),end:t};case"thisMonth":return{start:toIso(new Date(s.getFullYear(),s.getMonth(),1)),end:t};case"lastMonth":return{start:toIso(new Date(s.getFullYear(),s.getMonth()-1,1)),end:toIso(new Date(s.getFullYear(),s.getMonth(),0))};case"custom":{const o=e.customStart||CONFIG.DATA_START,a=e.customEnd||t;return o<=a?{start:o,end:a}:{start:a,end:o}}default:return{start:CONFIG.DATA_START,end:t}}}function previousRange({start:e,end:t}){const s=daysBetween(e,t);return{start:addDays(e,-s),end:addDays(e,-1)}}const inRange=(e,t)=>e.date>=t.start&&e.date<=t.end;let DATA={meta:null,google:null,tiktok:null,shopify:null},ERRORS={},filters={preset:"30",customStart:null,customEnd:null,compare:!0,excludeAmazon:!0},charts={},ga4Request=0,ga4Force=!1;const DEMO=new URLSearchParams(location.search).get("demo")==="1";let amazonRequest=0,amazonLast="",cohortRequest=0,cohortLast="",cohortData=null,creativeRequest=0,creativeLast="",creativeData=null;window.STATE=filters;for(const e of["RAW_ORDERS","RAW_META_ROWS","RAW_GOOGLE_ROWS","RAW_TIKTOK_ROWS","RAW_ADS"])window[e]=[];Object.defineProperty(window,"DATA",{get:()=>DATA}),DEMO&&(document.getElementById("demoNotice").style.display="block");function getKey(){try{return localStorage.getItem("vitanna_dash_key")||""}catch{return""}}function setKey(e){try{localStorage.setItem("vitanna_dash_key",e)}catch{}}function demoSource(e){const t=[];let s=CONFIG.DATA_START,o=0;for(;s<=todayCdmx();){const a=1+o%7*.1;if(e.includes("shopify"))t.push({date:s,orders:4+o%5,grossSales:6e3*a,refunds:100,netSales:4800*a,totalSales:5600*a});else for(const n of["Tienda PRO","Tráfico Amazon"]){const r=(n.includes("Amazon")?.24:1)*a;t.push({date:s,campaignId:n,campaign:n,spend:500*r,impressions:18e3*r,clicks:130*r,conversions:3*r,revenue:1e3*r})}o++,s=addDays(s,1)}return{currency:"MXN",rows:t,fetchedAt:new Date().toISOString(),meta:{demo:!0}}}async function fetchSource(e,t){if(DEMO)return demoSource(e);const s=todayCdmx();let o=CONFIG.DATA_START,a=null;for(;o<=s;){const n=[addDays(o,364),s].sort()[0],r=new URLSearchParams({since:o,until:n});t&&r.set("refresh","1");const u=await fetch(`${e}?${r}`,{headers:{"x-dashboard-key":getKey()}}),i=await u.json().catch(()=>({}));if(u.status===401){const c=new Error("auth");throw c.auth=!0,c}if(!u.ok)throw new Error(i.detail||i.error||`HTTP ${u.status}`);if(!a)a={...i,rows:[...i.rows||[]]};else{if(i.currency!==a.currency)throw new Error("Moneda inconsistente entre ventanas; revisar la fuente.");a.rows.push(...i.rows||[])}o=addDays(n,1)}if(!a)throw new Error("La fecha inicial es posterior a hoy.");return a}async function loadAll(e=!1){const t=document.getElementById("refreshBtn");t.disabled=!0;const s={...Object.fromEntries(Object.entries(PLATFORMS).map(([n,r])=>[n,r.endpoint])),shopify:SHOPIFY.endpoint};renderChips("load");const o=Object.keys(s),a=await Promise.allSettled(o.map(n=>fetchSource(s[n],e)));if(a.some(n=>n.status==="rejected"&&n.reason?.auth)){const n=prompt("Escribe la clave del dashboard:");if(n)return setKey(n),t.disabled=!1,loadAll(e)}ERRORS={},a.forEach((n,r)=>{n.status==="fulfilled"&&(n.value.currency&&n.value.currency!==CONFIG.CURRENCY||!n.value.currency&&n.value.rows?.length)?(DATA[o[r]]=null,ERRORS[o[r]]=n.value.currency?`La fuente usa ${n.value.currency}; se requieren ${CONFIG.CURRENCY}. No se mezclan monedas.`:"La fuente no confirmó su moneda; no se calculan importes."):n.status==="fulfilled"?DATA[o[r]]=n.value:(DATA[o[r]]=null,ERRORS[o[r]]=n.reason?.auth?"Falta la clave del dashboard.":n.reason?.message)}),document.getElementById("loading").style.display="none",t.disabled=!1,renderChips(),renderAll()}function sumRows(e){const t=e.reduce((s,o)=>({spend:s.spend+o.spend,impressions:s.impressions+o.impressions,clicks:s.clicks+o.clicks,conversions:s.conversions+o.conversions,revenue:s.revenue+o.revenue}),{spend:0,impressions:0,clicks:0,conversions:0,revenue:0});return t.ctr=safeDiv(t.clicks,t.impressions),t.cpc=safeDiv(t.spend,t.clicks),t.roas=safeDiv(t.revenue,t.spend),t.cpa=safeDiv(t.spend,t.conversions),t}function platformRows(e,t){return(DATA[e]?.rows||[]).filter(s=>inRange(s,t)&&!CONFIG.AMAZON_PATTERN.test(s.campaign||""))}function shopifyTotals(e){const s=(DATA.shopify?.rows||[]).filter(o=>inRange(o,e)).reduce((o,a)=>({orders:o.orders+a.orders,grossSales:o.grossSales+a.grossSales,refunds:o.refunds+a.refunds,netSales:o.netSales+a.netSales,totalSales:o.totalSales+(Number.isFinite(a.totalSales)?a.totalSales:0),hasTotal:o.hasTotal&&Number.isFinite(a.totalSales)}),{orders:0,grossSales:0,refunds:0,netSales:0,totalSales:0,hasTotal:!0});return s.hasTotal||(s.totalSales=null),s.revenue=s[CONFIG.SHOPIFY_REVENUE_FIELD],s.aov=safeDiv(s.revenue,s.orders),s}function blended(e){const t=Object.keys(PLATFORMS).filter(u=>DATA[u]);let s=0,o=0,a=0;for(const u of t)for(const i of(DATA[u]?.rows||[]).filter(c=>inRange(c,e))){if(CONFIG.AMAZON_PATTERN.test(i.campaign||"")){a+=i.spend;continue}s+=i.spend,o+=i.spend}const n=shopifyTotals(e),r=t.length===3&&!!DATA.shopify&&[...t,"shopify"].every(u=>DATA[u].currency===CONFIG.CURRENCY);return{spendAll:s,spendForRoas:o,amazonSpend:a,revenue:n.revenue,orders:n.orders,aov:n.aov,mer:r?safeDiv(n.revenue,o):NaN,cpo:r?safeDiv(o,n.orders):NaN,complete:t.length===3&&!!DATA.shopify}}function canCompare(e){return filters.compare&&previousRange(e).start>=CONFIG.DATA_START}function deltaHtml(e,t,s,o){if(!filters.compare)return"";if(!canCompare(o))return'<span class="delta">Sin periodo anterior</span>';if(!isFinite(e)||!isFinite(t)||t===0)return'<span class="delta">—</span>';const a=(e-t)/Math.abs(t)*100;return`<span class="delta ${s===0||Math.abs(a)<.05?"":a>0==s>0?"good":"bad"}" title="Periodo anterior: ${esc(previousRange(o).start)} a ${esc(previousRange(o).end)}">${a>0?"▲":"▼"} ${Math.abs(a).toFixed(1)}%</span>`}function kpiHtml(e,t,s){return`<div class="kpi"><div class="kpi-label">${e}</div><div class="kpi-value">${t}</div>${s||""}</div>`}function bucketKeys(e){const t=daysBetween(e.start,e.end)>CONFIG.WEEKLY_THRESHOLD_DAYS,s=[],o=new Set;for(let a=e.start;a<=e.end;a=addDays(a,1)){const n=t?weekStart(a):a;o.has(n)||(o.add(n),s.push(n))}return{keys:s,weekly:t,keyOf:a=>t?weekStart(a):a}}function seriesFrom(e,t,s){const{keys:o,keyOf:a}=bucketKeys(t),n=new Map(o.map(r=>[r,0]));return e.forEach(r=>{const u=a(r.date);n.has(u)&&n.set(u,n.get(u)+(r[s]||0))}),o.map(r=>n.get(r))}function renderChips(e){const t={...PLATFORMS,shopify:SHOPIFY};document.getElementById("sourceChips").innerHTML=Object.entries(t).map(([s,o])=>{const a=e==="load"?"load":ERRORS[s]?"err":DATA[s]?"ok":"",n=DATA[s]?.fetchedAt?`Actualizado ${new Date(DATA[s].fetchedAt).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}`:ERRORS[s]||"";return`<span class="chip ${a}" title="${esc(n)}"><i></i>${o.name}</span>`}).join("")}function renderAlerts(e){const t=[],s={...PLATFORMS,shopify:SHOPIFY};for(const[a,n]of Object.entries(ERRORS))t.push(`<div class="alert err"><b>${s[a].name} no cargó.</b> ${esc(n)}</div>`);const o=Object.entries(DATA).filter(([,a])=>a?.currency&&a.currency!==CONFIG.CURRENCY);o.length&&t.push(`<div class="alert"><b>Moneda distinta.</b> ${o.map(([a,n])=>`${s[a].name} reporta en ${esc(n.currency)}`).join(", ")}. No hay conversión de divisa; no usar sumas monetarias hasta conciliar las monedas.</div>`),document.getElementById("alerts").innerHTML=t.join("")}function renderResumen(e){const t=previousRange(e),s=blended(e),o=blended(t),a=shopifyTotals(e),n=shopifyTotals(t),r=cohortData?.key===`${e.start}|${e.end}`?cohortData:null,u=r?.current,i=r?.previous,c=u?.newCustomers,p=i?.newCustomers,m=s.complete&&[...Object.keys(PLATFORMS),"shopify"].every(y=>DATA[y]?.currency===CONFIG.CURRENCY),h=m&&s.spendForRoas>0&&a.totalSales!=null?a.totalSales/s.spendForRoas:NaN,l=m&&o.spendForRoas>0&&n.totalSales!=null?n.totalSales/o.spendForRoas:NaN,d=m&&c>0?s.spendForRoas/c:NaN,f=m&&p>0?o.spendForRoas/p:NaN,b="—",w=y=>Number.isFinite(y)?fmtInt(y):b,A=y=>Number.isFinite(y)?fmtMoney(y):b,R=(y,g,C)=>Number.isFinite(y)&&Number.isFinite(g)?deltaHtml(y,g,C,e):'<span class="delta">Sin comparación validada</span>';document.getElementById("heroNote").textContent="Shopify sin IVA ni envío para ROAS; Amazon excluido por nombre. "+(s.complete?"":"Faltan fuentes: ROAS, MER y CAC total no disponibles. ")+(r?.error?"Clientes: "+r.error:"Clientes nuevos y recurrentes provisionales; pendiente conciliar identidad e historial."),document.getElementById("heroGrid").innerHTML=[kpiHtml("Gasto · fuentes disponibles",Object.keys(PLATFORMS).some(y=>DATA[y])?A(s.spendAll):b,R(s.spendAll,o.spendAll,0)),kpiHtml("Ventas totales",DATA.shopify?A(a.totalSales):b,R(a.totalSales,n.totalSales,1)),kpiHtml("Ventas netas",DATA.shopify?A(a.revenue):b,R(a.revenue,n.revenue,1)),kpiHtml("Clientes nuevos",w(c),R(c,p,1)),kpiHtml("Compras de nuevos · neto",A(u?.netRevenueNew),R(u?.netRevenueNew,i?.netRevenueNew,1)),kpiHtml("Ticket de nuevos · neto",A(u?.ordersNew>0&&Number.isFinite(u?.netRevenueNew)?u.netRevenueNew/u.ordersNew:NaN),R(u?.ordersNew>0&&Number.isFinite(u?.netRevenueNew)?u.netRevenueNew/u.ordersNew:NaN,i?.ordersNew>0&&Number.isFinite(i?.netRevenueNew)?i.netRevenueNew/i.ordersNew:NaN,1)),kpiHtml("MER",fmtX(h),R(h,l,1)),kpiHtml("ROAS blended",fmtX(s.mer),R(s.mer,o.mer,1)),kpiHtml("CAC blended",A(d),R(d,f,-1)),kpiHtml("Pedidos totales",DATA.shopify?w(s.orders):b,R(s.orders,o.orders,1))].join(""),renderWeekly(e),renderCohortPanels(e,r),scheduleMonthly();const{keys:E,weekly:v}=bucketKeys(e),T=Object.entries(PLATFORMS).filter(([y])=>DATA[y]).map(([y,g])=>({type:"bar",order:1,label:`Inversión ${g.name}`,data:seriesFrom(platformRows(y,e),e,"spend"),backgroundColor:css(g.color),stack:"spend",yAxisID:"y",borderRadius:2})),M=DATA.shopify?[{type:"line",order:0,label:"Ventas Shopify",yAxisID:"y1",data:seriesFrom((DATA.shopify.rows||[]).map(y=>({date:y.date,v:y[CONFIG.SHOPIFY_REVENUE_FIELD]})),e,"v"),borderColor:css("--c-revenue"),backgroundColor:css("--c-revenue"),borderWidth:2,pointRadius:E.length>45?0:2,cubicInterpolationMode:"monotone"}]:[];document.getElementById("mainChartSub").textContent=`Barras: inversión por plataforma. Línea: ventas de Shopify. Agrupado por ${v?"semana":"día"}.`,drawChart("resumen",E.map(y=>v?`Sem ${fmtDay(y)}`:fmtDay(y)),[...T,...M],{stacked:!0,y:"money",y1:"money"});let k="";const S=[];for(const[y,g]of Object.entries(PLATFORMS)){if(!DATA[y]){k+=`<tr><td><span class="dot" style="background:${css(g.color)}"></span>${g.name} <span class="tag">sin conexión</span></td>${'<td class="muted">—</td>'.repeat(9)}</tr>`;continue}const C=sumRows(platformRows(y,e));S.push(C),k+=platformRowHtml(`<span class="dot" style="background:${css(g.color)}"></span>${g.name}`,C,s.spendAll)}const $=sumRows(S.map(y=>({spend:y.spend,impressions:y.impressions,clicks:y.clicks,conversions:y.conversions,revenue:y.revenue})));document.getElementById("table-resumen").innerHTML=tableHead(["Plataforma","Inversión","% inversión","Impresiones","Clics","CTR","CPC","Conversiones","Valor reportado","ROAS reportado"])+`<tbody>${k}<tr class="total"><td>Total · fuentes disponibles</td><td>${S.length?fmtMoney($.spend):"—"}</td><td>${S.length?fmtPct(safeDiv($.spend,s.spendAll)):"—"}</td><td>${S.length?fmtInt($.impressions):"—"}</td><td>${S.length?fmtInt($.clicks):"—"}</td><td>${fmtPct($.ctr)}</td><td>${isFinite($.cpc)?fmtMoney2($.cpc):"—"}</td><td>—</td><td>—</td><td>—</td></tr></tbody>`}function renderCohortPanels(e,t){const s=t?.current,o=t?.previous,a=blended(e),n=blended(previousRange(e)),r=(l,d)=>Number.isFinite(l)&&Number.isFinite(d)&&d>0?l/d:NaN,u=l=>l?r(l.returningCustomers,l.newCustomers+l.returningCustomers):NaN,i=l=>l?r(l.netRevenueNew,l.ordersNew):NaN,c=l=>l?r(l.netRevenueReturning,l.ordersReturning):NaN,p=[...Object.keys(PLATFORMS),"shopify"].every(l=>DATA[l]?.currency===CONFIG.CURRENCY),m=(l,d,f)=>l&&f&&p?r(d,l.newCustomers):NaN,h=(l,d,f,b,w=1)=>kpiHtml(l,Number.isFinite(d)?b==="money"?fmtMoney2(d):b==="pct"?fmtPct(d):fmtInt(d):"—",Number.isFinite(d)&&Number.isFinite(f)?deltaHtml(d,f,w,e):'<span class="delta">Comparación no disponible</span>');document.getElementById("cohortGrid").innerHTML=[h("Adquisición · clientes nuevos",s?.newCustomers,o?.newCustomers),h("Adquisición · CAC blended",m(s,a.spendForRoas,a.complete),m(o,n.spendForRoas,n.complete),"money",-1),h("Adquisición · ticket de nuevos",i(s),i(o),"money"),h("Retención · clientes recurrentes",s?.returningCustomers,o?.returningCustomers),h("Retención · % recompra",u(s),u(o),"pct"),h("Retención · ticket de recurrentes",c(s),c(o),"money")].join("")}let monthlyTask=0;function scheduleMonthly(){const e=++monthlyTask;setTimeout(()=>{e===monthlyTask&&renderMonthly()},0)}function renderMonthly(){const e=todayCdmx(),t=e.slice(0,4),s=t+"-01-01",o=document.getElementById("monthly-body");if(s<CONFIG.DATA_START){o.innerHTML='<tr><td colspan="6">Historial anual no disponible.</td></tr>';return}const a=Number(e.slice(5,7)),n=[];for(let c=1;c<=a;c++){const p=`${t}-${String(c).padStart(2,"0")}-01`,m=c===12?`${Number(t)+1}-01-01`:`${t}-${String(c+1).padStart(2,"0")}-01`,h=m>e?e:addDays(m,-1),l={start:p,end:h},d=Object.fromEntries(Object.keys(PLATFORMS).map(f=>[f,DATA[f]?sumRows(platformRows(f,l)).spend:null]));n.push({label:MES[c-1],...d,sales:DATA.shopify?shopifyTotals(l).revenue:null,orders:DATA.shopify?shopifyTotals(l).orders:null})}const r=c=>Number.isFinite(c)?fmtMoney(c):"—";o.innerHTML=n.map(c=>`<tr><td>${c.label}</td><td>${r(c.meta)}</td><td>${r(c.google)}</td><td>${r(c.tiktok)}</td><td>${r(c.sales)}</td><td>${c.orders==null?"—":fmtInt(c.orders)}</td></tr>`).join("");const u=document.getElementById("chart-monthly");if(typeof Chart>"u"){const c=u.closest(".card").querySelector(".sub");c.textContent.includes("Gráfica no disponible")||(c.textContent+=" Gráfica no disponible: no se pudo cargar Chart.js.");return}charts.monthly&&charts.monthly.destroy();const i=Object.entries(PLATFORMS).filter(([c])=>DATA[c]).map(([c,p])=>({type:"bar",order:1,label:p.name,data:n.map(m=>m[c]),backgroundColor:css(p.color),stack:"spend",yAxisID:"money"}));DATA.shopify&&(i.push({type:"bar",order:1,label:"Ventas netas",data:n.map(c=>c.sales),backgroundColor:css("--white"),stack:"sales",yAxisID:"money"}),i.push({type:"line",order:0,label:"Pedidos",data:n.map(c=>c.orders),borderColor:css("--wg3"),backgroundColor:css("--wg3"),yAxisID:"orders",cubicInterpolationMode:"monotone",tension:.25})),charts.monthly=new Chart(u,{data:{labels:n.map(c=>c.label),datasets:i},options:{responsive:!0,maintainAspectRatio:!1,animation:{duration:250},plugins:{legend:{labels:{color:css("--wg1")}}},scales:{x:{stacked:!0,ticks:{color:css("--wg3")},grid:{display:!1}},money:{stacked:!0,position:"left",beginAtZero:!0,ticks:{color:css("--wg3"),callback:c=>fmtMoney(c)},grid:{color:"rgba(255,255,255,.06)"}},orders:{position:"right",beginAtZero:!0,ticks:{color:css("--wg3")},grid:{display:!1}}}}})}function renderWeekly(e){let t=weekStart(e.start),s=[];for(;t<=e.end;){const i=addDays(t,6),c=t<e.start?e.start:t,p=i>e.end?e.end:i;s.push({start:c,end:p,partial:c!==t||p!==i}),t=addDays(t,7)}const o=s.map(i=>({...i,metrics:blended(i)})),a=document.getElementById("weekly-body"),n=Object.keys(PLATFORMS).some(i=>DATA[i]);a.innerHTML=o.map(i=>`<tr><td>${fmtDay(i.start)} – ${fmtDay(i.end)}${i.partial?" *":""}</td><td>${n?fmtMoney(i.metrics.spendAll):"—"}</td><td>${DATA.shopify?fmtInt(i.metrics.orders):"—"}</td><td>${DATA.shopify?fmtMoney(i.metrics.revenue):"—"}</td><td>${fmtX(i.metrics.mer)}</td><td>—</td><td>—</td></tr>`).join("")+`<tr class="total"><td>Total del periodo</td><td>${n?fmtMoney(blended(e).spendAll):"—"}</td><td>${DATA.shopify?fmtInt(blended(e).orders):"—"}</td><td>${DATA.shopify?fmtMoney(blended(e).revenue):"—"}</td><td>${fmtX(blended(e).mer)}</td><td>—</td><td>—</td></tr>`;const r=document.getElementById("chart-weekly");if(typeof Chart>"u"){const i=r.closest(".card").querySelector(".sub");i.textContent.includes("Gráfica no disponible")||(i.textContent+=" Gráfica no disponible: no se pudo cargar Chart.js.");return}charts.weekly&&charts.weekly.destroy();const u={tension:.25,cubicInterpolationMode:"monotone",pointRadius:3};charts.weekly=new Chart(r,{data:{labels:o.map(i=>`${fmtDay(i.start)}${i.partial?" *":""}`),datasets:[{type:"bar",order:1,label:"Inversión",data:o.map(i=>n?i.metrics.spendAll:null),backgroundColor:css("--c-meta"),yAxisID:"money"},{type:"bar",order:1,label:"Ventas netas",data:o.map(i=>DATA.shopify?i.metrics.revenue:null),backgroundColor:css("--wg5"),yAxisID:"money"},{type:"line",order:0,label:"Pedidos",data:o.map(i=>DATA.shopify?i.metrics.orders:null),borderColor:css("--white"),backgroundColor:css("--white"),yAxisID:"orders",...u},{type:"line",order:0,label:"ROAS blended",data:o.map(i=>Number.isFinite(i.metrics.mer)?i.metrics.mer:null),borderColor:css("--wg3"),backgroundColor:css("--wg3"),yAxisID:"roas",...u}]},options:{responsive:!0,maintainAspectRatio:!1,animation:{duration:250},plugins:{legend:{labels:{color:css("--wg1")}}},scales:{x:{ticks:{color:css("--wg3")},grid:{display:!1}},money:{position:"left",beginAtZero:!0,ticks:{color:css("--wg3"),callback:i=>fmtMoney(i)},grid:{color:"rgba(255,255,255,.06)"}},orders:{position:"right",beginAtZero:!0,ticks:{color:css("--wg3")},grid:{display:!1}},roas:{position:"right",beginAtZero:!0,ticks:{color:css("--wg3"),callback:i=>i+"x"},grid:{display:!1}}}}})}function tableHead(e){return`<thead><tr>${e.map(t=>`<th scope="col">${t}</th>`).join("")}</tr></thead>`}function platformCells(e,t,s){return`<td>${e}</td><td>${fmtMoney(t.spend)}</td><td>${fmtPct(safeDiv(t.spend,s))}</td><td>${fmtInt(t.impressions)}</td><td>${fmtInt(t.clicks)}</td><td>${fmtPct(t.ctr)}</td><td>${isFinite(t.cpc)?fmtMoney2(t.cpc):"—"}</td><td>${fmtInt(t.conversions)}</td><td>${fmtMoney(t.revenue)}</td><td>${fmtX(t.roas)}</td>`}function platformRowHtml(e,t,s){return`<tr>${platformCells(e,t,s)}</tr>`}function renderPlatform(e,t){const s=PLATFORMS[e],o=document.getElementById(`panel-${e}`);if(!DATA[e]){delete o.dataset.ready,o.innerHTML=`<div class="state">${s.name} todavía no está conectado.<br><span style="font-size:.85rem">${esc(ERRORS[e]||"")}</span><br><br>Revisa las variables de entorno en Vercel (README, sección ${s.name}).</div>`;return}const a=platformRows(e,t),n=sumRows(a),r=sumRows(platformRows(e,previousRange(t)));o.dataset.ready||(o.innerHTML=`<div class="kpis" id="kpis-${e}"></div>
+<div class="card"><h2>Inversión y ROAS reportado</h2>${e==="google"?'<p class="sub">Google: solo Google Shopping App Purchase; todas las conversiones atribuidas a la acción, por fecha de interacción. Pendiente conciliar con Google Ads.</p>':""}<p class="sub" id="sub-${e}"></p><div class="chart-box"><canvas id="chart-${e}"></canvas></div></div>
+<div class="card"><h2>Campañas</h2><p class="sub">Ordenadas por inversión. Se excluyen las campañas identificadas por nombre como Amazon; verifica el destino.</p><div class="table-scroll"><table id="table-${e}"></table></div></div>`,o.dataset.ready="1"),document.getElementById(`kpis-${e}`).innerHTML=[kpiHtml("Inversión",fmtMoney(n.spend),deltaHtml(n.spend,r.spend,0,t)),kpiHtml("Impresiones",fmtInt(n.impressions),deltaHtml(n.impressions,r.impressions,1,t)),kpiHtml("Clics",fmtInt(n.clicks),deltaHtml(n.clicks,r.clicks,1,t)),kpiHtml("CTR",fmtPct(n.ctr),deltaHtml(n.ctr,r.ctr,1,t)),kpiHtml("CPC",isFinite(n.cpc)?fmtMoney2(n.cpc):"—",deltaHtml(n.cpc,r.cpc,-1,t)),kpiHtml(e==="google"?"Compras":"Conversiones",fmtInt(n.conversions),deltaHtml(n.conversions,r.conversions,1,t)),kpiHtml(e==="google"?"Costo por compra":"Costo por conversión",isFinite(n.cpa)?fmtMoney2(n.cpa):"—",deltaHtml(n.cpa,r.cpa,-1,t)),kpiHtml("ROAS reportado",fmtX(n.roas),deltaHtml(n.roas,r.roas,1,t))].join("");const{keys:u,weekly:i}=bucketKeys(t),c=seriesFrom(a,t,"spend"),p=seriesFrom(a,t,"revenue");document.getElementById(`sub-${e}`).textContent=`Barras: inversión. Línea: ROAS según ${s.name}. Agrupado por ${i?"semana":"día"}.`,drawChart(e,u.map(l=>i?`Sem ${fmtDay(l)}`:fmtDay(l)),[{type:"bar",order:1,label:"Inversión",data:c,backgroundColor:css(s.color),yAxisID:"y",borderRadius:2},{type:"line",order:0,label:"ROAS",data:c.map((l,d)=>l?+(p[d]/l).toFixed(2):null),borderColor:css("--white"),backgroundColor:css("--white"),yAxisID:"y1",borderWidth:2,pointRadius:u.length>45?0:2,spanGaps:!0,cubicInterpolationMode:"monotone"}],{y:"money",y1:"x"});const m=new Map;a.forEach(l=>{const d=l.campaignId||l.campaign;m.has(d)||m.set(d,{name:l.campaign,rows:[]}),m.get(d).rows.push(l)});const h=[...m.values()].map(l=>({name:l.name,t:sumRows(l.rows)})).filter(l=>l.t.spend>0||l.t.impressions>0).sort((l,d)=>d.t.spend-l.t.spend);document.getElementById(`table-${e}`).innerHTML=tableHead(["Campaña","Inversión","% inversión","Impresiones","Clics","CTR","CPC",e==="google"?"Compras":"Conversiones","Valor reportado","ROAS reportado"])+`<tbody>${h.map(l=>platformRowHtml(esc(l.name)+(CONFIG.AMAZON_PATTERN.test(l.name||"")?'<span class="tag">Amazon</span>':""),l.t,n.spend)).join("")||'<tr><td colspan="10" class="muted">Sin actividad en este periodo.</td></tr>'}
+<tr class="total">${platformCells("Total",n,n.spend)}</tr></tbody>`}function renderShopify(e){const t=document.getElementById("kpis-shopify");if(!DATA.shopify){t.innerHTML=`<div class="kpi" style="grid-column:1/-1">Shopify todavía no está conectado. ${esc(ERRORS.shopify||"")}</div>`;return}const s=shopifyTotals(e),o=shopifyTotals(previousRange(e));t.innerHTML=[kpiHtml("Subtotal productos (con IVA)",fmtMoney(s.grossSales),deltaHtml(s.grossSales,o.grossSales,1,e)),kpiHtml("Reembolsos totales del pedido",fmtMoney(s.refunds),deltaHtml(s.refunds,o.refunds,-1,e)),kpiHtml("Ventas netas sin IVA",fmtMoney(s.netSales),deltaHtml(s.netSales,o.netSales,1,e)),kpiHtml("Pedidos",fmtInt(s.orders),deltaHtml(s.orders,o.orders,1,e)),kpiHtml("Ticket promedio",isFinite(s.aov)?fmtMoney2(s.aov):"—",deltaHtml(s.aov,o.aov,1,e))].join("");const a=DATA.shopify.rows||[],{keys:n,weekly:r}=bucketKeys(e);drawChart("shopify",n.map(u=>r?`Sem ${fmtDay(u)}`:fmtDay(u)),[{type:"bar",order:1,label:"Pedidos",data:seriesFrom(a,e,"orders"),backgroundColor:css("--wg5"),yAxisID:"y1",borderRadius:2},{type:"line",order:0,label:"Ventas netas sin IVA",data:seriesFrom(a,e,"netSales"),borderColor:css("--white"),backgroundColor:css("--white"),yAxisID:"y",borderWidth:2,pointRadius:n.length>45?0:2,cubicInterpolationMode:"monotone"}],{y:"money",y1:"int"})}function drawChart(e,t,s,o){if(typeof Chart>"u"){const u=document.getElementById(`chart-${e}`);u&&(u.setAttribute("aria-label","Gráfica no disponible: no se pudo cargar Chart.js."),u.setAttribute("role","img"));const i=u?.closest(".card")?.querySelector(".sub");i&&!i.textContent.includes("Gráfica no disponible")&&(i.textContent+=" Gráfica no disponible: no se pudo cargar Chart.js.");return}const a={color:css("--wg3"),font:{family:"Be Vietnam Pro",size:11}},n={color:"rgba(255,255,255,.06)"},r=u=>u==="money"?i=>fmtMoney(i):u==="x"?i=>i+"x":i=>fmtInt(i);charts[e]&&charts[e].destroy(),charts[e]=new Chart(document.getElementById(`chart-${e}`),{data:{labels:t,datasets:s},options:{responsive:!0,maintainAspectRatio:!1,interaction:{mode:"index",intersect:!1},plugins:{legend:{labels:{color:css("--wg1"),boxWidth:10,boxHeight:10,font:{family:"Be Vietnam Pro",size:12}}},tooltip:{backgroundColor:"#1A1A1A",borderColor:"rgba(255,255,255,.15)",borderWidth:1,padding:10,callbacks:{label:u=>{const i=u.dataset.yAxisID==="y1"?o.y1:o.y;return`${u.dataset.label}: ${u.raw==null?"—":r(i)(u.raw)}`}}}},scales:{x:{stacked:!!o.stacked,grid:{display:!1},ticks:{...a,maxRotation:0,autoSkip:!0,maxTicksLimit:12}},y:{stacked:!!o.stacked,position:"left",grid:n,ticks:{...a,callback:r(o.y)},beginAtZero:!0},y1:{position:"right",grid:{display:!1},ticks:{...a,callback:r(o.y1)},beginAtZero:!0}}}})}async function loadGA4(e){const t=++ga4Request,s=document.getElementById("panel-ga4"),o=ga4Force;ga4Force=!1,s.innerHTML='<div class="state">Cargando Web (GA4)…</div>';async function a(p){if(DEMO){const d={sessions:18567,activeUsers:12345,newUsers:9e3,totalUsers:12500,engagedSessions:1e4,engagementRate:.54,userEngagementDuration:39e3,screenPageViews:35e3,addToCarts:1200,ecommercePurchases:230,purchaseRevenue:204e3},f=b=>({status:"ok",rows:b,meta:{timeZone:"America/Mexico_City"}});return{reports:{totals:f([d]),purchaseSessionRate:f([{"sessionKeyEventRate:purchase":.012}]),cartSessionRate:f([{"sessionKeyEventRate:add_to_cart":.05}]),daily:f([{date:"20261005",sessions:500,ecommercePurchases:6,purchaseRevenue:4500},{date:"20261006",sessions:610,ecommercePurchases:8,purchaseRevenue:6200}]),channels:f([{...d,sessionDefaultChannelGroup:"Paid Social"}]),sourceMedium:f([{...d,sessionSourceMedium:"google / cpc"}]),devices:f([{...d,deviceCategory:"mobile"}]),regions:f([{...d,country:"Mexico",region:"Mexico City"}]),products:f([{itemName:"Producto de ejemplo",itemsViewed:1200,itemsAddedToCart:250,itemsPurchased:40,itemRevenue:24e3}])}}}const m=new URLSearchParams({since:p.start,until:p.end});o&&m.set("refresh","1");const h=await fetch("/api/ga4-web-data?"+m,{headers:{"x-dashboard-key":getKey()}}),l=await h.json().catch(()=>({}));if(!h.ok)throw new Error(l.detail||l.error||`HTTP ${h.status}`);return l}const n=(p,m)=>p==null||!Number.isFinite(p)?"—":m==="money"?fmtMoney2(p):m==="pct"?fmtPct(p):m==="time"?`${Math.floor(p/60)}m ${Math.round(p%60)}s`:m==="ratio"?Number(p).toFixed(2):fmtInt(p),r=(p,m)=>Number.isFinite(p)&&Number.isFinite(m)&&m>0?p/m:null,u=p=>({"Paid Social":"Social pagado","Organic Search":"Búsqueda orgánica",Direct:"Directo","Cross-network":"Redes cruzadas","Organic Social":"Social orgánico","Paid Search":"Búsqueda pagada",Referral:"Referidos",Email:"Correo",mobile:"Móvil",desktop:"Escritorio",tablet:"Tableta","Mexico City":"Ciudad de México",Mexico:"México"})[p]||p;function i(p,m,h,l){if(!m||m.status!=="ok")return`<div class="card"><h2>${p}</h2><p class="sub">${esc(m?.detail||"Datos no disponibles.")}</p></div>`;const d=m.rows||[];return`<div class="card"><h2>${p}</h2><p class="sub">${l}</p><div class="table-scroll"><table>${tableHead(["Nombre","Sesiones","% sesiones","Interacción","Añadidos al carrito","Compras","Ingreso","Ingreso / sesión"])}<tbody>${d.map(f=>`<tr><td>${esc(u(f[h]))}</td><td>${n(f.sessions)}</td><td>${n(r(f.sessions,c?.sessions),"pct")}</td><td>${n(f.engagementRate,"pct")}</td><td>${n(f.addToCarts)}</td><td>${n(f.ecommercePurchases)}</td><td>${n(f.purchaseRevenue,"money")}</td><td>${n(r(f.purchaseRevenue,f.sessions),"money")}</td></tr>`).join("")||'<tr><td colspan="8">Sin datos en el periodo.</td></tr>'}</tbody></table></div></div>`}let c=null;try{const[p,m]=await Promise.all([a(e),canCompare(e)?a(previousRange(e)).catch(y=>({error:y.message})):null]);if(t!==ga4Request)return;const h=p.reports||{},l=m?.reports||{};c=h.totals?.rows?.[0]||null;const d=l.totals?.rows?.[0]||null,f=(y,g)=>y?.[g]??null,b=h.purchaseSessionRate?.rows?.[0]?.["sessionKeyEventRate:purchase"]??null,w=l.purchaseSessionRate?.rows?.[0]?.["sessionKeyEventRate:purchase"]??null,A=h.cartSessionRate?.rows?.[0]?.["sessionKeyEventRate:add_to_cart"]??null,R=l.cartSessionRate?.rows?.[0]?.["sessionKeyEventRate:add_to_cart"]??null,E=(y,g,C=!1)=>{if(!filters.compare)return"";if(y==null||g==null)return'<span class="delta">Comparación no disponible</span>';if(C){const N=(y-g)*100;return`<span class="delta">${N>=0?"+":""}${N.toFixed(1)} pp vs. anterior</span>`}return deltaHtml(y,g,0,e)},v=(y,g,C,N,I=!1)=>kpiHtml(y,n(g,N),E(g,C,I)),T=[v("Sesiones",f(c,"sessions"),f(d,"sessions")),v("Usuarios activos",f(c,"activeUsers"),f(d,"activeUsers")),v("% usuarios nuevos",r(c?.newUsers,c?.totalUsers),r(d?.newUsers,d?.totalUsers),"pct",!0),v("Tasa de interacción",f(c,"engagementRate"),f(d,"engagementRate"),"pct",!0),v("Interacción media por sesión",r(c?.userEngagementDuration,c?.sessions),r(d?.userEngagementDuration,d?.sessions),"time"),v("Páginas por sesión",r(c?.screenPageViews,c?.sessions),r(d?.screenPageViews,d?.sessions),"ratio"),v("Tasa de conversión por sesión",b,w,"pct",!0),v("Tasa de añadido al carrito",A,R,"pct",!0),v("Abandono de carrito",null,null,"pct",!0),v("Ingreso por sesión",r(c?.purchaseRevenue,c?.sessions),r(d?.purchaseRevenue,d?.sessions),"money")],M=Object.values(h).filter(y=>y?.meta?.thresholded||y?.meta?.sampled||y?.meta?.dataLoss),k=h.products?.status==="ok"?`<div class="card"><h2>Productos en la web</h2><p class="sub">Unidades registradas por GA4; no son ventas conciliadas de Shopify.</p><div class="table-scroll"><table>${tableHead(["Producto","Unidades vistas","Unidades añadidas","Unidades compradas","Ingreso por artículo"])}<tbody>${h.products.rows.map(y=>`<tr><td>${esc(y.itemName)}</td><td>${n(y.itemsViewed)}</td><td>${n(y.itemsAddedToCart)}</td><td>${n(y.itemsPurchased)}</td><td>${n(y.itemRevenue,"money")}</td></tr>`).join("")||'<tr><td colspan="5">Sin datos.</td></tr>'}</tbody></table></div></div>`:`<div class="alert">Productos: ${esc(h.products?.detail||"No disponible.")}</div>`,S=h.regions?.status==="ok"?{...h.regions,rows:h.regions.rows.filter(y=>["Mexico","México"].includes(y.country))}:h.regions;s.innerHTML=`<div class="alert">Los datos de GA4 dependen de los eventos configurados y pueden diferir de Shopify; las renovaciones de suscripción pueden no estar incluidas. Tasas por sesión: solo si el evento está configurado como evento clave. El embudo por sesiones y el abandono aún no están disponibles.</div>${M.length?'<div class="alert">GA4 reporta umbral, muestreo o agrupación «other» en al menos un informe.</div>':""}<div class="kpis">${T.join("")}</div>
+<div class="card"><h2>Evolución diaria</h2><p class="sub">Sesiones por día. Las compras son eventos purchase, no pedidos de Shopify.</p><div class="chart-box"><canvas id="chart-web-daily"></canvas></div></div>
+${i("Canales",h.channels,"sessionDefaultChannelGroup","Agrupación estándar por sesión; comparación, no atribución de ventas.")}
+${i("Fuente / medio",h.sourceMedium,"sessionSourceMedium","Ingreso y compras reportados por GA4.")}
+${i("Dispositivos",h.devices,"deviceCategory","Sesiones por dispositivo.")}
+${i("Estados de México",S,"region","Solo filas de México; los nombres no reconocidos se muestran como los entrega GA4.")}${k}`;const $=(h.daily?.rows||[]).slice().sort((y,g)=>y.date.localeCompare(g.date));drawChart("web-daily",$.map(y=>`${y.date.slice(6,8)}/${y.date.slice(4,6)}`),[{type:"bar",order:1,label:"Sesiones",data:$.map(y=>y.sessions),backgroundColor:css("--c-meta"),yAxisID:"y"}],{y:"int",y1:"int"})}catch(p){t===ga4Request&&(s.innerHTML=`<div class="alert err"><b>Google Analytics 4 no cargó.</b> ${esc(p.message)}</div>`)}}async function loadCreativos(e){const t=e.start+"|"+e.end,s=document.getElementById("panel-creativos");if(creativeLast===t&&creativeData){drawCreativos(creativeData);return}const o=++creativeRequest;creativeLast=t,s.innerHTML='<div class="state">Cargando anuncios de Meta…</div>';try{let a;if(DEMO)a={currency:"MXN",rows:[{date:e.start,adId:"1",ad:"Video bienestar PRO",campaign:"Tienda PRO",adset:"Prospección",label:"Prospecting",spend:5e3,impressions:5e4,clicks:600,purchases:20,purchaseValue:18e3,landingPageViews:450},{date:e.start,adId:"2",ad:"Rutina RTG",campaign:"Tienda RTG",adset:"Remarketing",label:"Retargeting",spend:2500,impressions:26e3,clicks:380,purchases:15,purchaseValue:12e3,landingPageViews:300}]};else{const n=new URLSearchParams({since:e.start,until:e.end}),r=await fetch("/api/meta-detail-data?"+n,{headers:{"x-dashboard-key":getKey()}});if(a=await r.json().catch(()=>({})),!r.ok)throw new Error(a.detail||a.error||`HTTP ${r.status}`)}if(a.currency&&a.currency!==CONFIG.CURRENCY)throw new Error(`Meta reporta en ${a.currency}; no se muestran importes como ${CONFIG.CURRENCY}.`);if(o!==creativeRequest)return;creativeData=a,drawCreativos(a)}catch(a){o===creativeRequest&&(creativeLast="",creativeData=null,s.innerHTML=`<div class="alert err"><b>Detalle de anuncios de Meta no disponible.</b> ${esc(a.message)}</div>`)}}function drawCreativos(e){const t=document.getElementById("panel-creativos"),s=new Map;for(const m of e.rows||[]){if(CONFIG.AMAZON_PATTERN.test(m.campaign||""))continue;const h=m.adId||m.ad;let l=s.get(h);l||(l={ad:m.ad,campaign:m.campaign,adset:m.adset,label:m.label,spend:0,impressions:0,clicks:0,purchases:0,purchaseValue:0,visits:0,hasPurchases:!0,hasValue:!0,hasVisits:!0},s.set(h,l));for(const d of["spend","impressions","clicks"])l[d]+=Number(m[d])||0;for(const[d,f]of[["purchases","hasPurchases"],["purchaseValue","hasValue"],["landingPageViews","hasVisits"]])Number.isFinite(m[d])?l[d==="landingPageViews"?"visits":d]+=m[d]:l[f]=!1}const o=[...s.values()],a=["Prospecting","Retargeting","Sin clasificar"],n=a.map(m=>{const h=o.filter(b=>b.label===m),l=h.reduce((b,w)=>b+w.spend,0),d=h.reduce((b,w)=>b+w.purchases,0),f=h.reduce((b,w)=>b+w.purchaseValue,0);return kpiHtml(m,fmtMoney(l),`<span class="delta">${h.length} anuncios · ROAS ${h.length&&h.every(b=>b.hasValue)?fmtX(safeDiv(f,l)):"—"} · Compras ${h.length&&h.every(b=>b.hasPurchases)?fmtInt(d):"—"}</span>`)}).join("");t.innerHTML=`<div class="executive-intro"><p class="eyebrow">Meta Ads</p><h2>Creativos Meta</h2><p class="sub">Las clasificaciones usan RTG/PRO en el nombre. Se excluyen campañas identificadas como Amazon.</p></div><div class="kpis">${n}</div><div class="card"><h2>Top creativos por ROAS</h2><p class="sub">Alcance, frecuencia y clics únicos no se suman por día. Miniaturas y métricas únicas pendientes de consulta por periodo.</p><div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem"><label>Buscar <input id="creativeSearch" type="search" style="background:var(--g90);border:1px solid var(--line);border-radius:5px;padding:.4rem" placeholder="Anuncio o campaña"></label><label>Tipo <select id="creativeType" style="background:var(--g90);color:white;padding:.4rem;border:1px solid var(--line);border-radius:5px"><option value="">Todos</option>${a.map(m=>`<option>${m}</option>`).join("")}</select></label></div><div class="table-scroll"><table>${tableHead(["Concepto","Tipo","Campaña","Inversión","Impresiones","CTR enlace","Visitas web","Compras","Valor","ROAS"])}<tbody id="creativeBody"></tbody></table></div><div style="display:flex;gap:1rem;margin-top:1rem"><button class="btn" id="creativePrev">Anterior</button><span id="creativePage" class="muted"></span><button class="btn" id="creativeNext">Siguiente</button></div></div>`;let r=0;const u=t.querySelector("#creativeSearch"),i=t.querySelector("#creativeType"),c=t.querySelector("#creativeBody");function p(){const m=u.value.trim().toLowerCase(),h=o.filter(d=>(!i.value||d.label===i.value)&&`${d.ad} ${d.campaign} ${d.adset}`.toLowerCase().includes(m)).sort((d,f)=>(safeDiv(f.purchaseValue,f.spend)||0)-(safeDiv(d.purchaseValue,d.spend)||0)),l=Math.max(1,Math.ceil(h.length/10));r=Math.min(r,l-1),c.innerHTML=h.slice(r*10,r*10+10).map(d=>`<tr><td>${esc(d.ad)}</td><td>${esc(d.label)}</td><td>${esc(d.campaign)}</td><td>${fmtMoney(d.spend)}</td><td>${fmtInt(d.impressions)}</td><td>${fmtPct(safeDiv(d.clicks,d.impressions))}</td><td>${d.hasVisits?fmtInt(d.visits):"—"}</td><td>${d.hasPurchases?fmtInt(d.purchases):"—"}</td><td>${d.hasValue?fmtMoney(d.purchaseValue):"—"}</td><td>${d.hasValue?fmtX(safeDiv(d.purchaseValue,d.spend)):"—"}</td></tr>`).join("")||'<tr><td colspan="10">No hay anuncios para este filtro.</td></tr>',t.querySelector("#creativePage").textContent=`Página ${r+1} de ${l} · ${h.length} anuncios`,t.querySelector("#creativePrev").disabled=r===0,t.querySelector("#creativeNext").disabled=r>=l-1}u.addEventListener("input",()=>{r=0,p()}),i.addEventListener("change",()=>{r=0,p()}),t.querySelector("#creativePrev").addEventListener("click",()=>{r--,p()}),t.querySelector("#creativeNext").addEventListener("click",()=>{r++,p()}),p()}async function loadCohorts(e,t=!1){if(!DATA.shopify)return;const s=e.start+"|"+e.end;if(!t&&cohortLast===s)return;cohortLast=s;const o=++cohortRequest;async function a(n){if(DEMO)return{newCustomers:120,returningCustomers:60,ordersNew:130,ordersReturning:60,unclassifiedOrders:0,netRevenueNew:12e4,netRevenueReturning:45e3};const r=new URLSearchParams({since:n.start,until:n.end});t&&r.set("refresh","1");const u=await fetch("/api/shopify-cohorts-data?"+r,{headers:{"x-dashboard-key":getKey()}}),i=await u.json().catch(()=>({}));if(!u.ok)throw new Error(i.detail||i.error||`HTTP ${u.status}`);return i}try{const n=await a(e);let r=null;if(canCompare(e)&&(r=await a(previousRange(e)).catch(()=>null)),o!==cohortRequest)return;cohortData={key:s,current:n,previous:r},renderResumen(e)}catch(n){o===cohortRequest&&(cohortData={key:s,error:n.message},renderResumen(e))}}async function loadAmazon(e,t=!1){const s=e.start+"|"+e.end;if(!t&&amazonLast===s)return;amazonLast=s;const o=++amazonRequest,a=document.getElementById("amazon-body"),n=document.getElementById("amazon-notes");a.innerHTML='<tr><td colspan="8" class="muted">Cargando tráfico a Amazon…</td></tr>',n.textContent="";try{let r;if(DEMO)r={metaAds:{status:"ok",currency:"MXN",spend:15200,reach:45e3,impressions:72e3,frequency:1.6,uniqueLinkClicks:1100,uniqueLinkCpc:13.82,landingPageViews:870,note:"Cifras de ejemplo."},googleAds:{status:"ok",currency:"MXN",spend:8400,impressions:19e3,note:"Cifras de ejemplo."},tiktokAds:{status:"not_connected",note:"TikTok pendiente de conexión."}};else{const c=new URLSearchParams({since:e.start,until:e.end});t&&c.set("refresh","1");const p=await fetch("/api/amazon-traffic-data?"+c,{headers:{"x-dashboard-key":getKey()}}),m=await p.json().catch(()=>({}));if(!p.ok)throw new Error(m.detail||m.error||`HTTP ${p.status}`);r=m}if(o!==amazonRequest)return;const u=(c,p)=>c==null||!Number.isFinite(Number(c))?"—":p==="money"?fmtMoney2(Number(c)):p==="freq"?Number(c).toFixed(2)+"x":fmtInt(Number(c)),i=[["Meta",r.metaAds],["Google",r.googleAds],["TikTok",r.tiktokAds]].map(([c,p])=>p?.currency&&p.currency!==CONFIG.CURRENCY?[c,{status:"error",detail:`Moneda ${p.currency}; no se convierte a ${CONFIG.CURRENCY}.`}]:[c,p]);a.innerHTML=i.map(([c,p])=>`<tr><td>${c}${p?.status!=="ok"?' <span class="tag">no disponible</span>':""}</td>${["spend","reach","impressions","frequency","uniqueLinkClicks","uniqueLinkCpc","landingPageViews"].map((m,h)=>`<td>${p?.status==="ok"?u(p[m],h===0||h===5?"money":h===3?"freq":"int"):"—"}</td>`).join("")}</tr>`).join(""),n.innerHTML=i.filter(([,c])=>c?.note||c?.detail).map(([c,p])=>`<p><b>${c}:</b> ${esc([p.note,p.detail].filter(Boolean).join(" "))}</p>`).join("")}catch(r){o===amazonRequest&&(amazonLast="",a.innerHTML=`<tr><td colspan="8" class="muted">No se pudo cargar el tráfico a Amazon: ${esc(r.message)}</td></tr>`)}}function renderAll(){const e=resolveRange(filters);document.getElementById("visibleRange").textContent=`${e.start} → ${e.end} · ${DATA.shopify?.meta?.timezone||"America/Mexico_City"}`,renderAlerts(e),renderResumen(e),loadAmazon(e),loadCohorts(e),Object.keys(PLATFORMS).forEach(t=>renderPlatform(t,e)),renderShopify(e),document.getElementById("panel-ga4").classList.contains("active")&&loadGA4(e),document.getElementById("panel-creativos").classList.contains("active")&&loadCreativos(e)}document.querySelectorAll("#presets button").forEach(e=>e.addEventListener("click",()=>{document.querySelectorAll("#presets button").forEach(t=>t.setAttribute("aria-pressed","false")),e.setAttribute("aria-pressed","true"),filters.preset=e.dataset.preset,document.getElementById("customRange").classList.toggle("show",filters.preset==="custom"),renderAll()})),document.getElementById("customStart").addEventListener("change",e=>{filters.customStart=e.target.value,renderAll()}),document.getElementById("customEnd").addEventListener("change",e=>{filters.customEnd=e.target.value,renderAll()}),document.getElementById("compareToggle").addEventListener("change",e=>{filters.compare=e.target.checked,renderAll()}),document.getElementById("refreshBtn").addEventListener("click",()=>{ga4Force=!0,amazonLast="",cohortLast="",creativeLast="",loadAll(!0)}),document.querySelectorAll(".tab").forEach(e=>e.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected","false")),document.querySelectorAll(".panel").forEach(t=>t.classList.remove("active")),e.setAttribute("aria-selected","true"),document.getElementById(`panel-${e.dataset.tab}`).classList.add("active"),Object.values(charts).forEach(t=>t.resize()),e.dataset.tab==="ga4"&&loadGA4(resolveRange(filters)),e.dataset.tab==="creativos"&&loadCreativos(resolveRange(filters))}));const cs=document.getElementById("customStart"),ce=document.getElementById("customEnd");cs.min=ce.min=CONFIG.DATA_START,cs.max=ce.max=todayCdmx(),loadAll();
 
-const PLATFORMS = {
-  meta:   { name:'Meta',   endpoint:'/api/meta-data',       color:'--c-meta' },
-  google: { name:'Google', endpoint:'/api/google-ads-data', color:'--c-google' },
-  tiktok: { name:'TikTok', endpoint:'/api/tiktok-data',     color:'--c-tiktok' },
-};
-const SHOPIFY = { name:'Shopify', endpoint:'/api/shopify-data' };
-const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-
-const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-const fmtMoney = v => (isFinite(v)?v:0).toLocaleString('es-MX',{style:'currency',currency:CONFIG.CURRENCY,maximumFractionDigits:0});
-const fmtMoney2 = v => (isFinite(v)?v:0).toLocaleString('es-MX',{style:'currency',currency:CONFIG.CURRENCY,maximumFractionDigits:2});
-const fmtInt = v => Math.round(isFinite(v)?v:0).toLocaleString('es-MX');
-const fmtPct = v => isFinite(v) ? (v*100).toFixed(2)+'%' : '—';
-const fmtX = v => isFinite(v) && v>0 ? v.toFixed(2)+'x' : '—';
-const safeDiv = (a,b) => b ? a/b : NaN;
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-/* =========================================================================
-   FECHAS — todo como texto "YYYY-MM-DD". Nunca new Date("YYYY-MM-DD"):
-   eso es medianoche UTC y en México corre el rango un día.
-   ========================================================================= */
-const pad = n => String(n).padStart(2,'0');
-const toIso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-const todayCdmx = () => new Intl.DateTimeFormat('en-CA', {timeZone:'America/Mexico_City', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date());
-const fromIso = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
-const addDays = (iso, n) => { const d = fromIso(iso); d.setDate(d.getDate()+n); return toIso(d); };
-const daysBetween = (a, b) => Math.round((fromIso(b) - fromIso(a)) / 86400000) + 1;
-const fmtDay = iso => { const [y,m,d] = iso.split('-'); return `${+d} ${MES[+m-1]}`; };
-function weekStart(iso){ const d = fromIso(iso); const dow = (d.getDay()+6)%7; d.setDate(d.getDate()-dow); return toIso(d); }
-
-function resolveRange(f, todayIso = todayCdmx()){
-  const today = fromIso(todayIso);
-  switch(f.preset){
-    case '7': return { start:addDays(todayIso,-6), end:todayIso };
-    case '30': return { start:addDays(todayIso,-29), end:todayIso };
-    case 'thisMonth': return { start:toIso(new Date(today.getFullYear(), today.getMonth(), 1)), end:todayIso };
-    case 'lastMonth': return { start:toIso(new Date(today.getFullYear(), today.getMonth()-1, 1)), end:toIso(new Date(today.getFullYear(), today.getMonth(), 0)) };
-    case 'custom': {
-      const s = f.customStart || CONFIG.DATA_START, e = f.customEnd || todayIso;
-      return s <= e ? { start:s, end:e } : { start:e, end:s };
-    }
-    default: return { start:CONFIG.DATA_START, end:todayIso };
-  }
-}
-function previousRange({start, end}){
-  const len = daysBetween(start, end);
-  return { start:addDays(start, -len), end:addDays(start, -1) };
-}
-const inRange = (row, r) => row.date >= r.start && row.date <= r.end;
-
-/* =========================================================================
-   ESTADO
-   ========================================================================= */
-let DATA = { meta:null, google:null, tiktok:null, shopify:null };
-let ERRORS = {};
-let filters = { preset:'30', customStart:null, customEnd:null, compare:true, excludeAmazon:true };
-let charts = {};
-let ga4Request = 0;
-let ga4Force = false;
-
-/* =========================================================================
-   CARGA — cada fuente falla por separado; el resto del dashboard sigue.
-   ========================================================================= */
-function getKey(){ try{ return localStorage.getItem('vitanna_dash_key') || ''; }catch{ return ''; } }
-function setKey(k){ try{ localStorage.setItem('vitanna_dash_key', k); }catch{} }
-
-async function fetchSource(endpoint, force){
-  // El servidor limita cada solicitud a 400 días. Mantener el histórico por
-  // ventanas consecutivas, también después del primer año.
-  const end = todayCdmx();
-  let since = CONFIG.DATA_START, combined = null;
-  while(since <= end){
-    const until = [addDays(since, 364), end].sort()[0];
-    const qs = new URLSearchParams({ since, until });
-    if(force) qs.set('refresh','1');
-    const res = await fetch(`${endpoint}?${qs}`, { headers:{ 'x-dashboard-key':getKey() } });
-    const body = await res.json().catch(()=>({}));
-    if(res.status === 401){ const e = new Error('auth'); e.auth = true; throw e; }
-    if(!res.ok) throw new Error(body.detail || body.error || `HTTP ${res.status}`);
-    if(!combined) combined = {...body, rows:[...(body.rows||[])]};
-    else {
-      if(body.currency !== combined.currency) throw new Error('Moneda inconsistente entre ventanas; revisar la fuente.');
-      combined.rows.push(...(body.rows||[]));
-    }
-    since = addDays(until,1);
-  }
-  if(!combined) throw new Error('La fecha inicial es posterior a hoy.');
-  return combined;
-}
-
-async function loadAll(force=false){
-  const btn = document.getElementById('refreshBtn');
-  btn.disabled = true;
-  const sources = { ...Object.fromEntries(Object.entries(PLATFORMS).map(([k,p])=>[k,p.endpoint])), shopify:SHOPIFY.endpoint };
-  renderChips('load');
-  const keys = Object.keys(sources);
-  const results = await Promise.allSettled(keys.map(k => fetchSource(sources[k], force)));
-  if(results.some(r => r.status==='rejected' && r.reason?.auth)){
-    const k = prompt('Escribe la clave del dashboard:');
-    if(k){ setKey(k); btn.disabled = false; return loadAll(force); }
-  }
-  ERRORS = {};
-  results.forEach((r,i) => {
-    if(r.status==='fulfilled') DATA[keys[i]] = r.value;
-    else { DATA[keys[i]] = null; ERRORS[keys[i]] = r.reason?.auth ? 'Falta la clave del dashboard.' : r.reason?.message; }
-  });
-  document.getElementById('loading').style.display = 'none';
-  btn.disabled = false;
-  renderChips();
-  renderAll();
-}
-
-/* =========================================================================
-   CÁLCULOS
-   ========================================================================= */
-function sumRows(rows){
-  const t = rows.reduce((a,r)=>({ spend:a.spend+r.spend, impressions:a.impressions+r.impressions, clicks:a.clicks+r.clicks, conversions:a.conversions+r.conversions, revenue:a.revenue+r.revenue }), { spend:0, impressions:0, clicks:0, conversions:0, revenue:0 });
-  t.ctr = safeDiv(t.clicks, t.impressions); t.cpc = safeDiv(t.spend, t.clicks);
-  t.roas = safeDiv(t.revenue, t.spend); t.cpa = safeDiv(t.spend, t.conversions);
-  return t;
-}
-function platformRows(key, range){ return (DATA[key]?.rows || []).filter(r => inRange(r, range) && !CONFIG.AMAZON_PATTERN.test(r.campaign || '')); }
-function shopifyTotals(range){
-  const rows = (DATA.shopify?.rows || []).filter(r => inRange(r, range));
-  const t = rows.reduce((a,r)=>({ orders:a.orders+r.orders, grossSales:a.grossSales+r.grossSales, refunds:a.refunds+r.refunds, netSales:a.netSales+r.netSales }), { orders:0, grossSales:0, refunds:0, netSales:0 });
-  t.revenue = t[CONFIG.SHOPIFY_REVENUE_FIELD];
-  t.aov = safeDiv(t.revenue, t.orders);
-  return t;
-}
-// Métricas de negocio: une inversión de las 3 plataformas con ventas reales de Shopify.
-function blended(range){
-  const loaded = Object.keys(PLATFORMS).filter(k => DATA[k]);
-  let spendAll = 0, spendForRoas = 0, amazonSpend = 0;
-  for(const k of loaded){
-    for(const r of platformRows(k, range)){
-      spendAll += r.spend;
-      const isAmazon = CONFIG.AMAZON_PATTERN.test(r.campaign || '');
-      if(isAmazon) amazonSpend += r.spend;
-      if(!(filters.excludeAmazon && isAmazon)) spendForRoas += r.spend;
-    }
-  }
-  const s = shopifyTotals(range);
-  const comparable = loaded.length === 3 && !!DATA.shopify && [...loaded, 'shopify'].every(k => DATA[k].currency === CONFIG.CURRENCY);
-  return {
-    spendAll, spendForRoas, amazonSpend,
-    revenue:s.revenue, orders:s.orders, aov:s.aov,
-    mer: comparable ? safeDiv(s.revenue, spendForRoas) : NaN,
-    cpo: comparable ? safeDiv(spendForRoas, s.orders) : NaN,
-    complete: loaded.length === 3 && !!DATA.shopify,
-  };
-}
-// Solo hay comparación si el periodo anterior cae dentro de lo descargado.
-function canCompare(range){ return filters.compare && previousRange(range).start >= CONFIG.DATA_START; }
-// polarity: 1 = subir es bueno, -1 = bajar es bueno, 0 = neutral
-function deltaHtml(curr, prev, polarity, range){
-  if(!filters.compare) return '';
-  if(!canCompare(range)) return '<span class="delta">Sin periodo anterior</span>';
-  if(!isFinite(curr) || !isFinite(prev) || prev === 0) return '<span class="delta">—</span>';
-  const pct = (curr-prev)/Math.abs(prev)*100;
-  const cls = polarity === 0 || Math.abs(pct) < 0.05 ? '' : (pct > 0) === (polarity > 0) ? 'good' : 'bad';
-  return `<span class="delta ${cls}" title="Periodo anterior: ${esc(previousRange(range).start)} a ${esc(previousRange(range).end)}">${pct>0?'▲':'▼'} ${Math.abs(pct).toFixed(1)}%</span>`;
-}
-function kpiHtml(label, value, deltaStr){
-  return `<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${deltaStr||''}</div>`;
-}
-
-// Serie temporal agrupada por día o semana.
-function bucketKeys(range){
-  const weekly = daysBetween(range.start, range.end) > CONFIG.WEEKLY_THRESHOLD_DAYS;
-  const keys = []; const seen = new Set();
-  for(let d = range.start; d <= range.end; d = addDays(d,1)){
-    const k = weekly ? weekStart(d) : d;
-    if(!seen.has(k)){ seen.add(k); keys.push(k); }
-  }
-  return { keys, weekly, keyOf: d => weekly ? weekStart(d) : d };
-}
-function seriesFrom(rows, range, field){
-  const { keys, keyOf } = bucketKeys(range);
-  const m = new Map(keys.map(k=>[k,0]));
-  rows.forEach(r => { const k = keyOf(r.date); if(m.has(k)) m.set(k, m.get(k) + (r[field]||0)); });
-  return keys.map(k => m.get(k));
-}
-
-/* =========================================================================
-   RENDER
-   ========================================================================= */
-function renderChips(state){
-  const all = { ...PLATFORMS, shopify:SHOPIFY };
-  document.getElementById('sourceChips').innerHTML = Object.entries(all).map(([k,p]) => {
-    const cls = state==='load' ? 'load' : ERRORS[k] ? 'err' : DATA[k] ? 'ok' : '';
-    const t = DATA[k]?.fetchedAt ? `Actualizado ${new Date(DATA[k].fetchedAt).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}` : (ERRORS[k]||'');
-    return `<span class="chip ${cls}" title="${esc(t)}"><i></i>${p.name}</span>`;
-  }).join('');
-}
-
-function renderAlerts(range){
-  const out = [];
-  const all = { ...PLATFORMS, shopify:SHOPIFY };
-  for(const [k,msg] of Object.entries(ERRORS)){
-    out.push(`<div class="alert err"><b>${all[k].name} no cargó.</b> ${esc(msg)}</div>`);
-  }
-  const currencies = Object.entries(DATA).filter(([,d])=>d?.currency && d.currency !== CONFIG.CURRENCY);
-  if(currencies.length){
-    out.push(`<div class="alert"><b>Moneda distinta.</b> ${currencies.map(([k,d])=>`${all[k].name} reporta en ${esc(d.currency)}`).join(', ')}. No hay conversión de divisa; no usar sumas monetarias hasta conciliar las monedas.</div>`);
-  }
-  document.getElementById('alerts').innerHTML = out.join('');
-}
-
-function renderResumen(range){
-  const prev = previousRange(range);
-  const b = blended(range), bp = blended(prev);
-  document.getElementById('heroMer').textContent = fmtX(b.mer);
-  document.getElementById('heroMerDelta').outerHTML = `<div id="heroMerDelta">${deltaHtml(b.mer, bp.mer, 1, range)}</div>`;
-  const notes = [];
-  notes.push('Campañas excluidas por nombre; verifica que el destino esté correctamente identificado.');
-  if(!b.complete) notes.push('ROAS y costo por pedido no disponibles: faltan fuentes.');
-  else if(!isFinite(b.mer)) notes.push('ROAS no disponible: revisa moneda, inversión y datos.');
-  notes.push('Ventas de producto sin IVA ni envío; conciliación con Shopify pendiente. No atribuir todas las ventas a pauta.');
-  document.getElementById('heroNote').textContent = notes.join(' ');
-
-  document.getElementById('heroGrid').innerHTML = [
-    kpiHtml('Ventas Shopify sin IVA', DATA.shopify ? fmtMoney(b.revenue) : '—', deltaHtml(b.revenue, bp.revenue, 1, range)),
-    kpiHtml('Inversión total (fuentes disponibles)', Object.keys(PLATFORMS).some(k=>DATA[k]) ? fmtMoney(b.spendAll) : '—', deltaHtml(b.spendAll, bp.spendAll, 0, range)),
-    kpiHtml('Pedidos', DATA.shopify ? fmtInt(b.orders) : '—', deltaHtml(b.orders, bp.orders, 1, range)),
-    kpiHtml('Costo por pedido', isFinite(b.cpo) ? fmtMoney2(b.cpo) : '—', deltaHtml(b.cpo, bp.cpo, -1, range)),
-    kpiHtml('Ticket promedio', isFinite(b.aov) ? fmtMoney2(b.aov) : '—', deltaHtml(b.aov, bp.aov, 1, range)),
-  ].join('');
-
-  // Gráfica: barras apiladas por plataforma + línea de ventas
-  const { keys, weekly } = bucketKeys(range);
-  const bars = Object.entries(PLATFORMS).filter(([k])=>DATA[k]).map(([k,p]) => ({
-    type:'bar', order:1, label:`Inversión ${p.name}`, data:seriesFrom(platformRows(k,range), range, 'spend'),
-    backgroundColor:css(p.color), stack:'spend', yAxisID:'y', borderRadius:2,
-  }));
-  const lines = DATA.shopify ? [{
-    type:'line', order:0, label:'Ventas Shopify', yAxisID:'y1',
-    data:seriesFrom((DATA.shopify.rows||[]).map(r=>({date:r.date, v:r[CONFIG.SHOPIFY_REVENUE_FIELD]})), range, 'v'),
-    borderColor:css('--c-revenue'), backgroundColor:css('--c-revenue'), borderWidth:2, pointRadius:keys.length>45?0:2, cubicInterpolationMode:'monotone',
-  }] : [];
-  document.getElementById('mainChartSub').textContent = `Barras: inversión por plataforma. Línea: ventas de Shopify. Agrupado por ${weekly?'semana':'día'}.`;
-  drawChart('resumen', keys.map(k => weekly ? `Sem ${fmtDay(k)}` : fmtDay(k)), [...bars, ...lines], { stacked:true, y:'money', y1:'money' });
-
-  // Tabla por plataforma
-  let rowsHtml = '';
-  const totals = [];
-  for(const [k,p] of Object.entries(PLATFORMS)){
-    if(!DATA[k]){ rowsHtml += `<tr><td><span class="dot" style="background:${css(p.color)}"></span>${p.name} <span class="tag">sin conexión</span></td>${'<td class="muted">—</td>'.repeat(9)}</tr>`; continue; }
-    const t = sumRows(platformRows(k, range)); totals.push(t);
-    rowsHtml += platformRowHtml(`<span class="dot" style="background:${css(p.color)}"></span>${p.name}`, t, b.spendAll);
-  }
-  const T = sumRows(totals.map(t=>({spend:t.spend, impressions:t.impressions, clicks:t.clicks, conversions:t.conversions, revenue:t.revenue})));
-  document.getElementById('table-resumen').innerHTML = tableHead(['Plataforma','Inversión','% inversión','Impresiones','Clics','CTR','CPC','Conversiones','Valor reportado','ROAS reportado']) +
-    `<tbody>${rowsHtml}<tr class="total"><td>Total · fuentes disponibles</td><td>${totals.length ? fmtMoney(T.spend) : "—"}</td><td>${totals.length ? fmtPct(safeDiv(T.spend,b.spendAll)) : "—"}</td><td>${totals.length ? fmtInt(T.impressions) : "—"}</td><td>${totals.length ? fmtInt(T.clicks) : "—"}</td><td>${fmtPct(T.ctr)}</td><td>${isFinite(T.cpc) ? fmtMoney2(T.cpc) : "—"}</td><td>—</td><td>—</td><td>—</td></tr></tbody>`;
-}
-
-function tableHead(cols){ return `<thead><tr>${cols.map(c=>`<th scope="col">${c}</th>`).join('')}</tr></thead>`; }
-function platformCells(label, t, spendTotal){
-  return `<td>${label}</td><td>${fmtMoney(t.spend)}</td><td>${fmtPct(safeDiv(t.spend, spendTotal))}</td><td>${fmtInt(t.impressions)}</td><td>${fmtInt(t.clicks)}</td><td>${fmtPct(t.ctr)}</td><td>${isFinite(t.cpc)?fmtMoney2(t.cpc):'—'}</td><td>${fmtInt(t.conversions)}</td><td>${fmtMoney(t.revenue)}</td><td>${fmtX(t.roas)}</td>`;
-}
-function platformRowHtml(label, t, spendTotal){ return `<tr>${platformCells(label, t, spendTotal)}</tr>`; }
-
-function renderPlatform(key, range){
-  const p = PLATFORMS[key];
-  const el = document.getElementById(`panel-${key}`);
-  if(!DATA[key]){
-    delete el.dataset.ready;
-    el.innerHTML = `<div class="state">${p.name} todavía no está conectado.<br><span style="font-size:.85rem">${esc(ERRORS[key]||'')}</span><br><br>Revisa las variables de entorno en Vercel (README, sección ${p.name}).</div>`;
-    return;
-  }
-  const rows = platformRows(key, range);
-  const t = sumRows(rows), tp = sumRows(platformRows(key, previousRange(range)));
-  if(!el.dataset.ready){
-    el.innerHTML = `<div class="kpis" id="kpis-${key}"></div>
-      <div class="card"><h2>Inversión y ROAS reportado</h2>${key === 'google' ? '<p class="sub">Google: solo Google Shopping App Purchase; todas las conversiones atribuidas a la acción, por fecha de interacción. Pendiente conciliar con Google Ads.</p>' : ''}<p class="sub" id="sub-${key}"></p><div class="chart-box"><canvas id="chart-${key}"></canvas></div></div>
-      <div class="card"><h2>Campañas</h2><p class="sub">Ordenadas por inversión. Se excluyen las campañas identificadas por nombre como Amazon; verifica el destino.</p><div class="table-scroll"><table id="table-${key}"></table></div></div>`;
-    el.dataset.ready = '1';
-  }
-  document.getElementById(`kpis-${key}`).innerHTML = [
-    kpiHtml('Inversión', fmtMoney(t.spend), deltaHtml(t.spend, tp.spend, 0, range)),
-    kpiHtml('Impresiones', fmtInt(t.impressions), deltaHtml(t.impressions, tp.impressions, 1, range)),
-    kpiHtml('Clics', fmtInt(t.clicks), deltaHtml(t.clicks, tp.clicks, 1, range)),
-    kpiHtml('CTR', fmtPct(t.ctr), deltaHtml(t.ctr, tp.ctr, 1, range)),
-    kpiHtml('CPC', isFinite(t.cpc)?fmtMoney2(t.cpc):'—', deltaHtml(t.cpc, tp.cpc, -1, range)),
-    kpiHtml(key === 'google' ? 'Compras' : 'Conversiones', fmtInt(t.conversions), deltaHtml(t.conversions, tp.conversions, 1, range)),
-    kpiHtml(key === 'google' ? 'Costo por compra' : 'Costo por conversión', isFinite(t.cpa)?fmtMoney2(t.cpa):'—', deltaHtml(t.cpa, tp.cpa, -1, range)),
-    kpiHtml('ROAS reportado', fmtX(t.roas), deltaHtml(t.roas, tp.roas, 1, range)),
-  ].join('');
-
-  const { keys, weekly } = bucketKeys(range);
-  const spend = seriesFrom(rows, range, 'spend'), rev = seriesFrom(rows, range, 'revenue');
-  document.getElementById(`sub-${key}`).textContent = `Barras: inversión. Línea: ROAS según ${p.name}. Agrupado por ${weekly?'semana':'día'}.`;
-  drawChart(key, keys.map(k => weekly ? `Sem ${fmtDay(k)}` : fmtDay(k)), [
-    { type:'bar', order:1, label:'Inversión', data:spend, backgroundColor:css(p.color), yAxisID:'y', borderRadius:2 },
-    { type:'line', order:0, label:'ROAS', data:spend.map((s,i)=> s ? +(rev[i]/s).toFixed(2) : null), borderColor:css('--white'), backgroundColor:css('--white'), yAxisID:'y1', borderWidth:2, pointRadius:keys.length>45?0:2, spanGaps:true, cubicInterpolationMode:'monotone' },
-  ], { y:'money', y1:'x' });
-
-  // Tabla de campañas
-  const byCamp = new Map();
-  rows.forEach(r => { const id = r.campaignId || r.campaign; if(!byCamp.has(id)) byCamp.set(id, { name:r.campaign, rows:[] }); byCamp.get(id).rows.push(r); });
-  const camps = [...byCamp.values()].map(c => ({ name:c.name, t:sumRows(c.rows) })).filter(c => c.t.spend > 0 || c.t.impressions > 0).sort((a,b)=>b.t.spend-a.t.spend);
-  document.getElementById(`table-${key}`).innerHTML = tableHead(['Campaña','Inversión','% inversión','Impresiones','Clics','CTR','CPC',key === 'google' ? 'Compras' : 'Conversiones','Valor reportado','ROAS reportado']) +
-    `<tbody>${camps.map(c => platformRowHtml(esc(c.name) + (CONFIG.AMAZON_PATTERN.test(c.name||'') ? '<span class="tag">Amazon</span>' : ''), c.t, t.spend)).join('') || `<tr><td colspan="10" class="muted">Sin actividad en este periodo.</td></tr>`}
-     <tr class="total">${platformCells('Total', t, t.spend)}</tr></tbody>`;
-}
-
-function renderShopify(range){
-  const el = document.getElementById('kpis-shopify');
-  if(!DATA.shopify){
-    el.innerHTML = `<div class="kpi" style="grid-column:1/-1">Shopify todavía no está conectado. ${esc(ERRORS.shopify||'')}</div>`;
-    return;
-  }
-  const s = shopifyTotals(range), sp = shopifyTotals(previousRange(range));
-  el.innerHTML = [
-    kpiHtml('Subtotal productos (con IVA)', fmtMoney(s.grossSales), deltaHtml(s.grossSales, sp.grossSales, 1, range)),
-    kpiHtml('Reembolsos totales del pedido', fmtMoney(s.refunds), deltaHtml(s.refunds, sp.refunds, -1, range)),
-    kpiHtml('Ventas netas sin IVA', fmtMoney(s.netSales), deltaHtml(s.netSales, sp.netSales, 1, range)),
-    kpiHtml('Pedidos', fmtInt(s.orders), deltaHtml(s.orders, sp.orders, 1, range)),
-    kpiHtml('Ticket promedio', isFinite(s.aov)?fmtMoney2(s.aov):'—', deltaHtml(s.aov, sp.aov, 1, range)),
-  ].join('');
-  const rows = DATA.shopify.rows || [];
-  const { keys, weekly } = bucketKeys(range);
-  drawChart('shopify', keys.map(k => weekly ? `Sem ${fmtDay(k)}` : fmtDay(k)), [
-    { type:'bar', order:1, label:'Pedidos', data:seriesFrom(rows, range, 'orders'), backgroundColor:css('--wg5'), yAxisID:'y1', borderRadius:2 },
-    { type:'line', order:0, label:'Ventas netas sin IVA', data:seriesFrom(rows, range, 'netSales'), borderColor:css('--white'), backgroundColor:css('--white'), yAxisID:'y', borderWidth:2, pointRadius:keys.length>45?0:2, cubicInterpolationMode:'monotone' },
-  ], { y:'money', y1:'int' });
-}
-
-// Chart.js dibuja primero el order más alto: barras order:1 (atrás), líneas order:0 (adelante).
-function drawChart(id, labels, datasets, opts){
-  if(typeof Chart === 'undefined'){
-    const canvas = document.getElementById(`chart-${id}`);
-    if(canvas) { canvas.setAttribute('aria-label', 'Gráfica no disponible: no se pudo cargar Chart.js.'); canvas.setAttribute('role', 'img'); }
-    const sub = canvas?.closest('.card')?.querySelector('.sub');
-    if(sub && !sub.textContent.includes('Gráfica no disponible')) sub.textContent += ' Gráfica no disponible: no se pudo cargar Chart.js.';
-    return;
-  }
-  const tick = { color:css('--wg3'), font:{ family:'Be Vietnam Pro', size:11 } };
-  const grid = { color:'rgba(255,255,255,.06)' };
-  const fmt = t => t==='money' ? v=>fmtMoney(v) : t==='x' ? v=>v+'x' : v=>fmtInt(v);
-  if(charts[id]) charts[id].destroy();
-  charts[id] = new Chart(document.getElementById(`chart-${id}`), {
-    data:{ labels, datasets },
-    options:{
-      responsive:true, maintainAspectRatio:false, interaction:{ mode:'index', intersect:false },
-      plugins:{
-        legend:{ labels:{ color:css('--wg1'), boxWidth:10, boxHeight:10, font:{ family:'Be Vietnam Pro', size:12 } } },
-        tooltip:{ backgroundColor:'#1A1A1A', borderColor:'rgba(255,255,255,.15)', borderWidth:1, padding:10,
-          callbacks:{ label: c => { const ax = c.dataset.yAxisID === 'y1' ? opts.y1 : opts.y; return `${c.dataset.label}: ${c.raw==null?'—':fmt(ax)(c.raw)}`; } } },
-      },
-      scales:{
-        x:{ stacked:!!opts.stacked, grid:{ display:false }, ticks:{ ...tick, maxRotation:0, autoSkip:true, maxTicksLimit:12 } },
-        y:{ stacked:!!opts.stacked, position:'left', grid, ticks:{ ...tick, callback:fmt(opts.y) }, beginAtZero:true },
-        y1:{ position:'right', grid:{ display:false }, ticks:{ ...tick, callback:fmt(opts.y1) }, beginAtZero:true },
-      },
-    },
-  });
-}
-
-
-// GA4 se consulta por rango completo: los usuarios únicos no son sumables por día.
-async function loadGA4(range){
-  const seq = ++ga4Request, panel = document.getElementById('panel-ga4');
-  const force = ga4Force; ga4Force = false;
-  panel.innerHTML = '<div class="state">Cargando Google Analytics 4…</div>';
-  async function get(r){
-    const q = new URLSearchParams({since:r.start,until:r.end});
-    if(force) q.set('refresh','1');
-    const res = await fetch(`/api/ga4-data?${q}`,{headers:{'x-dashboard-key':getKey()}});
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(res.status===401 ? 'Clave del dashboard incorrecta o ausente.' : (data.detail || data.error || `HTTP ${res.status}`));
-    return data;
-  }
-  try{
-    const compare = canCompare(range);
-    const [current, old] = await Promise.all([get(range),compare ? get(previousRange(range)).catch(e=>({error:e.message})) : Promise.resolve(null)]);
-    if(seq !== ga4Request) return;
-    const delta = (field) => old && !old.error && current[field] != null && old[field] != null ? deltaHtml(current[field],old[field],0,range) : filters.compare ? `<span class="delta">${compare ? 'Comparación no disponible' : 'Sin periodo anterior'}</span>` : '';
-    const flags = [current.meta,old?.meta].filter(Boolean);
-    const notices = [];
-    if(old?.error) notices.push(`No se pudo cargar el periodo anterior: ${esc(old.error)}`);
-    if(flags.some(m=>m.thresholded)) notices.push('GA4 aplicó umbrales de privacidad; algunos datos pueden estar limitados.');
-    if(flags.some(m=>m.sampled)) notices.push('GA4 indica que el reporte contiene datos muestreados.');
-    if(flags.some(m=>m.dataLoss)) notices.push('GA4 agrupó algunos datos en «other».');
-    if(current.meta?.timeZone && current.meta.timeZone !== 'America/Mexico_City') notices.push(`La propiedad usa la zona horaria ${esc(current.meta.timeZone)}, distinta de Ciudad de México.`);
-    const previous = new Map((old?.channels || []).map(x=>[x.channel,x.sessions]));
-    const currentMap = new Map(current.channels.map(x=>[x.channel,x.sessions]));
-    const names = [...new Set([...currentMap.keys(), ...previous.keys()])].sort((a,b)=>(currentMap.get(b)||0)-(currentMap.get(a)||0));
-    const channelRows = names.map(name=>`<tr><td>${esc(name)}</td><td>${currentMap.has(name) ? fmtInt(currentMap.get(name)) : current.meta?.thresholded ? '—' : '0'}</td>${compare?`<td>${old?.error ? '—' : previous.has(name) ? fmtInt(previous.get(name)) : old?.meta?.thresholded ? '—' : '0'}</td>`:''}</tr>`).join('');
-    panel.innerHTML = `${notices.map(n=>`<div class="alert" style="margin-bottom:1rem">${n}</div>`).join('')}
-      <div class="kpis">${kpiHtml('Usuarios activos',current.activeUsers == null ? '—' : fmtInt(current.activeUsers),delta('activeUsers'))}${kpiHtml('Sesiones',current.sessions == null ? '—' : fmtInt(current.sessions),delta('sessions'))}</div>
-      <div class="card"><h2>Sesiones por canal de adquisición</h2><p class="sub">Agrupación predeterminada por sesión en GA4. Los usuarios activos son únicos para el periodo; los datos de GA4 pueden diferir de Ads y Shopify.</p>
-      <div class="table-scroll"><table style="min-width:0"><thead><tr><th>Canal</th><th>Sesiones</th>${compare?'<th>Periodo anterior</th>':''}</tr></thead><tbody>${channelRows || `<tr><td colspan="${compare?3:2}" class="muted">Sin sesiones en este periodo.</td></tr>`}</tbody></table></div></div>`;
-  }catch(e){ if(seq === ga4Request) panel.innerHTML = `<div class="alert err"><b>Google Analytics 4 no cargó.</b> ${esc(e.message)}</div>`; }
-}
-
-function renderAll(){
-  const range = resolveRange(filters);
-  renderAlerts(range);
-  renderResumen(range);
-  Object.keys(PLATFORMS).forEach(k => renderPlatform(k, range));
-  renderShopify(range);
-  if(document.getElementById('panel-ga4').classList.contains('active')) loadGA4(range);
-}
-
-/* =========================================================================
-   EVENTOS
-   ========================================================================= */
-document.querySelectorAll('#presets button').forEach(b => b.addEventListener('click', () => {
-  document.querySelectorAll('#presets button').forEach(x => x.setAttribute('aria-pressed','false'));
-  b.setAttribute('aria-pressed','true');
-  filters.preset = b.dataset.preset;
-  document.getElementById('customRange').classList.toggle('show', filters.preset === 'custom');
-  renderAll();
-}));
-document.getElementById('customStart').addEventListener('change', e => { filters.customStart = e.target.value; renderAll(); });
-document.getElementById('customEnd').addEventListener('change', e => { filters.customEnd = e.target.value; renderAll(); });
-document.getElementById('compareToggle').addEventListener('change', e => { filters.compare = e.target.checked; renderAll(); });
-document.getElementById('refreshBtn').addEventListener('click', () => { ga4Force = true; loadAll(true); });
-document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
-  document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected','false'));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  t.setAttribute('aria-selected','true');
-  document.getElementById(`panel-${t.dataset.tab}`).classList.add('active');
-  Object.values(charts).forEach(c => c.resize());
-  if(t.dataset.tab === 'ga4') loadGA4(resolveRange(filters));
-}));
-const cs = document.getElementById('customStart'), ce = document.getElementById('customEnd');
-cs.min = ce.min = CONFIG.DATA_START; cs.max = ce.max = todayCdmx();
-
-loadAll();
 </script>
 </body>
 </html>

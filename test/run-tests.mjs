@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { generateKeyPairSync } from "node:crypto";
+import { gunzipSync } from "node:zlib";
 import { chunkRange, parseRange } from "../lib/common.js";
 
 let calls = [];
@@ -373,7 +374,11 @@ await test("Amazon: no muestra únicos si el total agregado de Meta no coincide"
 
 await test("Resumen: separa inversión Amazon y nunca la incluye en ROAS Shopify", () => {
   const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-  const code=html.slice(html.indexOf('function blended(range){'),html.indexOf('// Solo hay comparación si el periodo anterior'));
+  const compressed=html.match(/Uint8Array\.from\(atob\("([A-Za-z0-9+/=]+)"/);
+  const source=compressed?gunzipSync(Buffer.from(compressed[1],'base64')).toString('utf8'):html;
+  const start=source.indexOf('function blended('), end=compressed?source.indexOf('function canCompare(',start):source.indexOf('// Solo hay comparación si el periodo anterior',start);
+  assert.ok(start>=0 && end>start,'La función blended debe estar presente');
+  const code=source.slice(start,end);
   const data={meta:{currency:'MXN',rows:[{date:'2026-01-01',campaign:'Amazon tráfico',spend:80},{date:'2026-01-01',campaign:'Shopify',spend:20}]},google:{currency:'MXN',rows:[]},tiktok:{currency:'MXN',rows:[]},shopify:{currency:'MXN'}};
   const ctx={DATA:data,PLATFORMS:{meta:{},google:{},tiktok:{}},CONFIG:{AMAZON_PATTERN:/amazon/i,CURRENCY:'MXN'},filters:{excludeAmazon:false},inRange:()=>true,shopifyTotals:()=>({revenue:100,orders:10,aov:10}),safeDiv:(a,b)=>b?a/b:NaN};
   const r=runInNewContext(code+'; blended({})',ctx);
@@ -401,6 +406,28 @@ await test("Meta detalle: etiqueta por nivel y no confunde PRO con producto",()=
 await test("Meta detalle: sigue paginación y conserva eventos separados",async()=>{
  responder=(url)=>new URL(url).searchParams.get('after')==='p2'?{body:{data:[{date_start:'2026-01-02',campaign_id:'1',campaign_name:'PRO',adset_id:'2',adset_name:'Prospecting',ad_id:'4',ad_name:'RTG creativo',spend:'5',impressions:'20',inline_link_clicks:'1',account_currency:'MXN'}]}}:{body:{data:[{date_start:'2026-01-01',campaign_id:'1',campaign_name:'PRO',adset_id:'2',adset_name:'Prospecting',ad_id:'3',ad_name:'Creativo',spend:'10',impressions:'100',inline_link_clicks:'5',account_currency:'MXN',objective:'OUTCOME_SALES',actions:[{action_type:'offsite_conversion.fb_pixel_purchase',value:'2'}]}],paging:{next:'https://graph.facebook.com/p?after=p2'}}};
  const result=await fetchMetaDetail({since:'2026-01-01',until:'2026-01-02'});assert.equal(result.rows.length,2);assert.equal(result.rows[0].purchases,2);assert.equal(result.rows[0].checkout,null);assert.equal(result.rows[1].label,'Retargeting');assert.ok(!('reach' in result.rows[0]));
+});
+
+// ---------- Meta creatives and audience ----------
+const {fetchCreative,imageUrl}=await import('../api/meta-creative-data.js');
+const {fetchAudience}=await import('../api/meta-audience-data.js');
+await test('Creativos Meta: métricas por periodo, miniaturas y exclusión Amazon',async()=>{
+ responder=(url)=>{const u=new URL(url);if(u.searchParams.has('ids'))return {body:{'123':{creative:{thumbnail_url:'https://scontent.fbcdn.net/a.jpg'}}}};
+ return {body:{data:[{campaign_id:'10',campaign_name:'PRO Tienda',adset_id:'20',adset_name:'PRO',ad_id:'123',ad_name:'Anuncio PRO',account_currency:'MXN',objective:'OUTCOME_SALES',spend:'100',impressions:'2000',reach:'500',unique_inline_link_click_ctr:'2.5',actions:[{action_type:'offsite_conversion.fb_pixel_purchase',value:'2'}],action_values:[{action_type:'offsite_conversion.fb_pixel_purchase',value:'600'}]},{campaign_name:'Amazon campaña',ad_id:'124',spend:'50'}]}};};
+ const x=await fetchCreative({since:'2026-06-01',until:'2026-06-30'});assert.equal(x.rows.length,1);assert.equal(x.rows[0].reach,500);assert.equal(x.rows[0].uniqueCtr,2.5);assert.equal(x.rows[0].purchases,2);assert.match(x.rows[0].image,/fbcdn/);assert.equal(x.media.withImage,1);assert.equal(imageUrl('https://malicious.example/a'),null);
+ assert.equal(calls.filter(c=>new URL(c.url).searchParams.has('time_increment')).length,0);
+});
+await test('Creativos Meta: no desaparecen las métricas si falla la imagen',async()=>{
+ responder=(url)=>new URL(url).searchParams.has('ids')?{status:403,body:{error:{message:'Sin acceso a imágenes'}}}:{body:{data:[{ad_id:'123',ad_name:'Anuncio',campaign_name:'Tienda',spend:'9',impressions:'10',account_currency:'MXN'}]}};
+ const x=await fetchCreative({since:'2026-06-01',until:'2026-06-30'});assert.equal(x.rows[0].spend,9);assert.equal(x.rows[0].image,null);assert.match(x.media.detail,/Sin acceso/);
+});
+await test('Audiencias Meta: cinco desgloses independientes excluyen Amazon',async()=>{
+ responder=(url)=>{const d=new URL(url).searchParams.get('breakdowns');if(d==='region')return {status:403,body:{error:{message:'No disponible'}}};return {body:{data:[{[d]:'female',campaign_name:'Tienda',account_currency:'MXN',spend:'20',impressions:'100',actions:[{action_type:'offsite_conversion.fb_pixel_purchase',value:'2'}],action_values:[{action_type:'offsite_conversion.fb_pixel_purchase',value:'400'}]},{[d]:'female',campaign_name:'Amazon tráfico',account_currency:'MXN',spend:'99',impressions:'900'}]}};};
+ const r=await fetchAudience({since:'2026-06-01',until:'2026-06-30'});assert.equal(r.reports.gender.rows[0].spend,20);assert.equal(r.reports.gender.rows[0].purchases,2);assert.equal(r.reports.region.status,'error');assert.equal(r.reports.device.status,'ok');
+});
+await test('Audiencias Meta: ante incompatibilidad muestra gasto sin inventar compras',async()=>{
+ responder=(url)=>{const u=new URL(url);if(u.searchParams.get('fields').includes('actions'))return {status:400,body:{error:{message:'Acciones incompatibles'}}};const d=u.searchParams.get('breakdowns');return {body:{data:[{[d]:'mobile',campaign_name:'Tienda',account_currency:'MXN',spend:'25',impressions:'100'}]}};};
+ const r=await fetchAudience({since:'2026-06-01',until:'2026-06-30'});assert.equal(r.reports.device.status,'partial');assert.equal(r.reports.device.rows[0].spend,25);assert.equal(r.reports.device.rows[0].purchases,null);
 });
 
 // ---------- Auth & config ----------

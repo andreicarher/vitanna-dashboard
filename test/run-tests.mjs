@@ -265,6 +265,29 @@ await test("Shopify: si falta estado de pago no inventa ventas", async()=>{
   const r=await call(shopify,{since:'2026-06-01',until:'2026-06-02'}); assert.equal(r.statusCode,502); assert.match(r.body.detail,/estado de pago/);
 });
 
+// ---------- Product reporting ----------
+const productsHandler=(await import('../api/shopify-products-data.js')).default;
+await test('Productos: agrupa líneas elegibles, unidades, pedidos y valor neto',async()=>{
+ const m=v=>({shopMoney:{amount:String(v)}}), line=(id,title,n,net)=>({id:`line-${id}`,title,currentQuantity:n,priceAfterAllDiscountsBeforeTaxesSet:m(net),product:{id,title,productType:' Suplementos ',vendor:' Vitanna '}});
+ const order=(id,status,lines,net)=>({id,createdAt:'2026-06-02T18:00:00Z',test:false,cancelledAt:null,displayFinancialStatus:status,taxesIncluded:false,currentSubtotalPriceSet:m(net),currentTaxLines:[],lineItems:{pageInfo:{hasNextPage:false},nodes:lines}});
+ responder=(_url,init)=>{const {query}=JSON.parse(init.body);if(query.includes('ProductReportInfo'))return {body:{data:{currentAppInstallation:{accessScopes:[{handle:'read_orders'},{handle:'read_all_orders'}]},shop:{ianaTimezone:'America/Mexico_City',currencyCode:'MXN'}}}};
+ return {body:{data:{orders:{pageInfo:{hasNextPage:false},nodes:[order('o1','PAID',[line('a','Omega',2,180),line('b','Colágeno',1,100)],280),order('o2','PARTIALLY_REFUNDED',[line('a','Omega',1,90)],90),order('o3','PENDING',[line('a','Omega',4,360)],360),order('o4','REFUNDED',[line('a','Omega',1,0)],0)]}}}};};
+ const r=await call(productsHandler,{since:'2026-06-01',until:'2026-06-30',refresh:'1'});assert.equal(r.statusCode,200,JSON.stringify(r.body));assert.equal(r.body.totals.units,4);assert.equal(r.body.totals.netSales,370);assert.equal(r.body.totals.difference,0);assert.equal(r.body.rows[0].orders,2);assert.equal(r.body.rows[0].category,'Suplementos');assert.equal(r.body.meta.excluded.financialStatus,2);
+});
+await test('Productos: continúa paginación de líneas y reporta diferencias',async()=>{
+ const m=v=>({shopMoney:{amount:String(v)}}),line=id=>({id,title:id,currentQuantity:1,priceAfterAllDiscountsBeforeTaxesSet:m(30),product:{id,title:id,productType:'',vendor:''}});
+ responder=(_url,init)=>{const {query}=JSON.parse(init.body);if(query.includes('ProductReportInfo'))return {body:{data:{currentAppInstallation:{accessScopes:[{handle:'read_orders'},{handle:'read_all_orders'}]},shop:{ianaTimezone:'America/Mexico_City',currencyCode:'MXN'}}}};if(query.includes('ProductReportLines'))return {body:{data:{node:{lineItems:{pageInfo:{hasNextPage:false},nodes:[line('b')]}}}}};return {body:{data:{orders:{pageInfo:{hasNextPage:false},nodes:[{id:'o',createdAt:'2026-06-02T18:00:00Z',test:false,cancelledAt:null,displayFinancialStatus:'PAID',taxesIncluded:false,currentSubtotalPriceSet:m(55),currentTaxLines:[],lineItems:{pageInfo:{hasNextPage:true,endCursor:'n'},nodes:[line('a')]}}]}}}};};
+ const r=await call(productsHandler,{since:'2026-06-01',until:'2026-06-30',refresh:'1'});assert.equal(r.statusCode,200);assert.equal(r.body.totals.products,2);assert.equal(r.body.totals.difference,5);assert.equal(r.body.rows[0].category,'Sin categoría');
+});
+await test('Productos: no inventa precios faltantes',async()=>{
+ responder=(_url,init)=>{const {query}=JSON.parse(init.body);if(query.includes('ProductReportInfo'))return {body:{data:{currentAppInstallation:{accessScopes:[{handle:'read_orders'},{handle:'read_all_orders'}]},shop:{ianaTimezone:'America/Mexico_City',currencyCode:'MXN'}}}};return {body:{data:{orders:{pageInfo:{hasNextPage:false},nodes:[{id:'o',createdAt:'2026-06-02T18:00:00Z',test:false,cancelledAt:null,displayFinancialStatus:'PAID',taxesIncluded:false,currentSubtotalPriceSet:{shopMoney:{amount:'20'}},currentTaxLines:[],lineItems:{pageInfo:{hasNextPage:false},nodes:[{title:'Omega',currentQuantity:1,product:null}]}}]}}}};};
+ const r=await call(productsHandler,{since:'2026-06-01',until:'2026-06-30',refresh:'1'});assert.equal(r.statusCode,502);assert.match(r.body.detail,/importe faltante/i);
+});
+await test('Productos: rechaza historial antiguo si no tiene acceso completo',async()=>{
+ responder=()=>({body:{data:{currentAppInstallation:{accessScopes:[{handle:'read_orders'}]},shop:{ianaTimezone:'America/Mexico_City',currencyCode:'MXN'}}}});
+ const r=await call(productsHandler,{since:'2020-01-01',until:'2020-01-02'});assert.equal(r.statusCode,502);assert.match(r.body.detail,/read_all_orders/);
+});
+
 // ---------- Customer cohorts (server-only, no identifiers in output) ----------
 const { customerCohorts } = await import("../lib/customer-cohorts.js");
 await test("Clientes: vincula por correo, teléfono o ID y distingue el historial", () => {

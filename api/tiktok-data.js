@@ -118,6 +118,7 @@ const SHEET_COLUMNS = {
   checkouts: "Checkout initiations",
   videoViews: "Video views",
   follows: "Paid follows",
+  reach: "Reach",
 };
 
 // gviz date shapes: "Date(2026,10,9)" (0-indexed month), ISO, or DD/MM/YYYY.
@@ -197,6 +198,9 @@ async function fetchTikTokSheet({ since, until }) {
       checkouts: sheetNum(val(r, "checkouts")),
       videoViews: sheetNum(val(r, "videoViews")),
       follows: sheetNum(val(r, "follows")),
+      // Daily reach per ad. NOT additive across days or ads: only use it for
+      // daily averages, never as the period's unique reach.
+      reach: idx.reach >= 0 ? sheetNum(val(r, "reach")) : null,
     });
   }
 

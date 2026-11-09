@@ -138,4 +138,4 @@ async function fetchGoogle({ since, until }) {
 }
 
 export default createHandler({ platform: "Google Ads", fetcher: fetchGoogle });
-export { fetchGoogle };
+export { fetchGoogle, gaqlSearch };

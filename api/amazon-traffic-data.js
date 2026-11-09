@@ -3,6 +3,7 @@
 import { createHandler, requireEnv, httpError } from '../lib/common.js';
 import { fetchMeta } from './meta-data.js';
 import { fetchGoogle } from './google-ads-data.js';
+import { fetchTikTokSheet } from './tiktok-data.js';
 const isAmazon = row => /amazon/i.test(row.campaign || '');
 function sumCampaigns(rows) {
   return rows.filter(isAmazon).reduce((a,r) => ({spend:a.spend+r.spend, impressions:a.impressions+r.impressions}), {spend:0,impressions:0});
@@ -52,10 +53,27 @@ async function amazonGoogle(range) {
   return {currency:report.currency, ...sumCampaigns(report.rows), reach:null, frequency:null, uniqueLinkClicks:null, uniqueLinkCpc:null, landingPageViews:null,
     note:'Alcance, frecuencia, clics únicos y visitas de destino no están disponibles en la consulta actual de Google Ads; no se sustituyen por clics comunes.'};
 }
+// TikTok comes from the Dataslayer Google Sheet (same source as /api/tiktok-data).
+// The Sheet has no unique reach/clicks for an aggregated period (reach isn't
+// additive across days or ads), so those stay empty instead of being faked.
+async function amazonTikTok(range) {
+  if (!process.env.TIKTOK_SHEET_ID) return { status: 'not_connected', note: 'TikTok pendiente de conexión (falta TIKTOK_SHEET_ID en Vercel).' };
+  const report = await fetchTikTokSheet(range);
+  const rows = report.rows.filter(isAmazon);
+  const totals = rows.reduce((a, r) => ({ spend: a.spend + r.spend, impressions: a.impressions + r.impressions, landingPageViews: a.landingPageViews + (r.landingPageViews || 0) }), { spend: 0, impressions: 0, landingPageViews: 0 });
+  return {
+    currency: report.currency, spend: totals.spend, impressions: totals.impressions,
+    reach: null, frequency: null, uniqueLinkClicks: null, uniqueLinkCpc: null,
+    landingPageViews: rows.length ? totals.landingPageViews : null,
+    note: rows.length
+      ? 'Datos del Google Sheet de Dataslayer. Alcance, frecuencia y clics únicos no se pueden sumar por periodo con esta fuente; visitas según la medición de TikTok.' + (report.meta?.stale ? ` Datos desactualizados: último día ${report.meta.lastDate}.` : '')
+      : 'No se identificaron campañas de TikTok con Amazon en el nombre en este periodo.',
+  };
+}
 async function fetchAmazonTraffic(range) {
-  const results = await Promise.allSettled([amazonMeta(range),amazonGoogle(range)]);
+  const results = await Promise.allSettled([amazonMeta(range),amazonGoogle(range),amazonTikTok(range)]);
   const source = r => r.status === 'fulfilled' ? {status:'ok',...r.value} : {status:'error',detail:r.reason?.message || 'Fuente no disponible'};
-  return {metaAds:source(results[0]),googleAds:source(results[1]),tiktokAds:{status:'not_connected',note:'TikTok pendiente de conexión.'},
+  return {metaAds:source(results[0]),googleAds:source(results[1]),tiktokAds:results[2].status==='fulfilled' && results[2].value.status==='not_connected' ? results[2].value : source(results[2]),
     classification:'Campañas identificadas por Amazon en el nombre; verificar su destino.', attribution:'No se suman métricas únicas entre canales.'};
 }
 export default createHandler({platform:'Tráfico a Amazon',fetcher:fetchAmazonTraffic});

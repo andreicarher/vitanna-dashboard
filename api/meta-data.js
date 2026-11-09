@@ -68,6 +68,9 @@ async function fetchMeta(range) {
     clicks: num(r.inline_link_clicks), // link clicks, comparable to Google/TikTok clicks
     conversions: pick(r.actions, action),
     revenue: pick(r.action_values, action),
+    // Landing page views (Meta's "Visitas a la página de destino"). Meta only
+    // returns the action when it's > 0, so a missing entry means 0.
+    landingPageViews: pick(r.actions, "landing_page_view"),
   }));
   return {
     currency: raw[0]?.account_currency || null,
